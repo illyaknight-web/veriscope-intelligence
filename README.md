@@ -2,6 +2,12 @@
 
 VERISCOPE™ is a Function Media LLC technology platform focused on operational intelligence infrastructure for high-consequence environments.
 
+## Official identity
+
+[**About VERISCOPE™ by Function Media LLC**](https://veriscope-intelligence.netlify.app/about-veriscope.html)
+
+**Illya Knight** is Founder and Managing Member of **Function Media LLC**, the source company behind VERISCOPE™.
+
 ## Brand Architecture
 
 **Function Media LLC**  
@@ -9,6 +15,10 @@ VERISCOPE™ is a Function Media LLC technology platform focused on operational 
 → **VERISCOPE DEFENSE™** — a Function Media LLC technology  
 → **VERISCOPE CYBER™** — a Function Media LLC technology  
 → **VERISCOPE JURIS™** — a Function Media LLC technology
+
+Function Media's broader technology portfolio also includes [SAFEPLATE™ by Function Media LLC](https://safeplate-intelligence.netlify.app/about-safeplate.html) and [NORTHLINE™ by Function Media LLC](https://northline-intelligence.netlify.app/).
+
+[View the **Function Media LLC Technology Portfolio**](https://function-media-intelligence.netlify.app/technology-portfolio.html)
 
 ## Function Media Research
 
