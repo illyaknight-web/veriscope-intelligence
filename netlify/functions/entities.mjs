@@ -1,0 +1,3 @@
+import {getJSON} from './lib/core-store.mjs';
+export default async function(req){const u=new URL(req.url);const all=await getJSON('entities',{});const id=u.searchParams.get('id');if(id){const entity=all[id];return entity?Response.json(entity):Response.json({error:'ENTITY_NOT_FOUND'},{status:404})}const type=u.searchParams.get('type');const q=(u.searchParams.get('q')||'').toLowerCase();const items=Object.values(all).filter(e=>!type||e.type===type).filter(e=>!q||`${e.name} ${(e.aliases||[]).join(' ')}`.toLowerCase().includes(q));return Response.json({count:items.length,items,mode:'SHADOW'},{headers:{'cache-control':'no-store'}})};
+export const config={path:'/api/entities'};
