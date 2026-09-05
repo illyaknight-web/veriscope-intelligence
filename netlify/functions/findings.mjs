@@ -1,0 +1,3 @@
+import {getJSON} from './lib/core-store.mjs';
+export default async function(req){const u=new URL(req.url);const all=await getJSON('findings',{});const id=u.searchParams.get('id');const sourceRecordId=u.searchParams.get('sourceRecordId');if(id)return all[id]?Response.json(all[id]):Response.json({error:'FINDING_NOT_FOUND'},{status:404});const items=Object.values(all).filter(f=>!sourceRecordId||f.sourceRecordId===sourceRecordId).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));return Response.json({count:items.length,items,mode:'SHADOW'},{headers:{'cache-control':'no-store'}})};
+export const config={path:'/api/findings'};
