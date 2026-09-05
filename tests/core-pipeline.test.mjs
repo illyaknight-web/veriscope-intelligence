@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {buildSafeplateCorrelation,validateSafeplateRecord} from '../netlify/functions/lib/core-pipeline.mjs';
+import {applyReviewDecision,buildSafeplateCorrelation,validateSafeplateRecord} from '../netlify/functions/lib/core-pipeline.mjs';
 
 const recall=JSON.parse(fs.readFileSync(new URL('./fixtures/safeplate-great-value-triple-berry-2026.json',import.meta.url),'utf8'));
 
@@ -56,4 +56,13 @@ test('confidence is separate from domain risk',()=>{
   assert.equal(typeof finding.confidence,'number');
   assert.equal(finding.risk.value,'HIGH');
   assert.notEqual(String(finding.confidence),String(finding.risk.value));
+});
+
+test('human review is required and can explicitly approve the finding',()=>{
+  const {finding}=buildSafeplateCorrelation(recall);
+  assert.equal(finding.humanApproved,false);
+  const reviewed=applyReviewDecision(finding,'APPROVED','TEST_HUMAN_REVIEWER','Verified against linked FDA evidence for pipeline test.');
+  assert.equal(reviewed.reviewStatus,'APPROVED');
+  assert.equal(reviewed.humanApproved,true);
+  assert.equal(reviewed.review.reviewer,'TEST_HUMAN_REVIEWER');
 });
