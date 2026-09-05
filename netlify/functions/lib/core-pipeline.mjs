@@ -42,3 +42,9 @@ export function buildSafeplateCorrelation(record){
   const finding={id:canonicalId('finding',record.id),sourceRecordId:record.id,what:`VERISCOPE resolved ${entities.length} supported entities and ${edges.length} evidence-backed relationships from SAFEPLATE record ${record.id}.`,why:'Relationships were emitted only where the normalized SAFEPLATE source record directly supported them. No unsupported supplier, distributor, retailer, ownership, lot or outbreak links were created.',supportingEvidence:record.evidence,contradictingEvidence:[],confidence:Number(Math.min(...edges.map(e=>e.confidence),.99).toFixed(2)),risk:{value:record.severity||null,source:'SAFEPLATE_DOMAIN_VALUE',note:'Risk/severity is stored separately from VERISCOPE confidence.'},provenance:{category:'VERISCOPE_CORRELATION',inputCategory:'SAFEPLATE_NORMALIZED_RECORD',source:record.source,sourceRecordId:record.id},timestamp:now(),humanApproved:false,reviewStatus:'PENDING_HUMAN_REVIEW'};
   return {graph,finding,entities,edges};
 }
+
+export function applyReviewDecision(finding,decision,reviewer='human-reviewer',notes=''){
+  if(!finding)throw new Error('FINDING_NOT_FOUND');
+  if(!['APPROVED','REJECTED'].includes(decision))throw new Error('INVALID_DECISION');
+  return {...finding,reviewStatus:decision,humanApproved:decision==='APPROVED',review:{reviewer,notes,timestamp:now()}};
+}
