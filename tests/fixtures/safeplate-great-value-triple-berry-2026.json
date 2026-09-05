@@ -1,0 +1,63 @@
+{
+  "id": "FDA-GREAT-VALUE-TRIPLE-BERRY-2026-09-03",
+  "title": "Great Value Organic Triple Berry Blend 10 OZ",
+  "product": "Great Value Organic Triple Berry Blend 10 OZ (Including Strawberries, Blackberries and Blueberries)",
+  "company": "Frutas y Hortalizas del Sur S.A.",
+  "hazard": "E. coli",
+  "severity": "HIGH",
+  "status": "VERIFIED",
+  "category": "Food",
+  "states": ["AL","AR","FL","IL","IN","KY","LA","MN","MS","MO","NC","OH","OK","SC","TX","WI"],
+  "distribution": "Shipped to select Walmart stores in Alabama, Arkansas, Florida, Illinois, Indiana, Kentucky, Louisiana, Minnesota, Mississippi, Missouri, North Carolina, Ohio, Oklahoma, South Carolina, Texas and Wisconsin.",
+  "firmLocation": {
+    "type": "recalling_firm",
+    "city": "San Carlos",
+    "state": "",
+    "country": "Chile",
+    "label": "San Carlos, Chile"
+  },
+  "origin": null,
+  "lat": null,
+  "lng": null,
+  "source": "FDA recall announcement / SAFEPLATE normalized record",
+  "updatedAt": "2026-09-03T00:00:00.000Z",
+  "verifiedAt": "2026-09-03T00:00:00.000Z",
+  "recallDate": "2026-09-02T00:00:00.000Z",
+  "last_synced": "2026-09-05T11:00:00.000Z",
+  "upc": "7874211226",
+  "gtin": null,
+  "identifiers": ["7874211226","LOT-6040-01-6"],
+  "distribution_channel": ["retail"],
+  "tefap_commodity_flag": false,
+  "summary": "Potential contamination with Escherichia coli O145:H28 (E. coli O145).",
+  "lots": ["6040 01-6"],
+  "evidence": [
+    {
+      "type": "AGENCY",
+      "status": "VERIFIED",
+      "source": "U.S. Food and Drug Administration",
+      "text": "Frutas y Hortalizas del Sur S.A. expanded a recall to include one lot of Great Value Organic Triple Berry Blend because of potential E. coli O145:H28 contamination.",
+      "url": "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts/frutas-y-hortalizas-del-sur-sa-expands-recall-include-one-lot-great-value-frozen-organic-triple"
+    },
+    {
+      "type": "IDENTIFIER",
+      "status": "VERIFIED",
+      "source": "U.S. Food and Drug Administration",
+      "text": "UPC 7874211226; Lot Code 6040 01-6; Best If Used By February 9, 2028"
+    },
+    {
+      "type": "DISTRIBUTION",
+      "status": "VERIFIED",
+      "source": "U.S. Food and Drug Administration",
+      "text": "Shipped to select Walmart stores in 16 states."
+    },
+    {
+      "type": "LOCATION",
+      "status": "VERIFIED",
+      "source": "U.S. Food and Drug Administration",
+      "text": "Frutas y Hortalizas del Sur S.A., San Carlos, Chile",
+      "role": "recalling_firm"
+    }
+  ],
+  "rawSource": "fda_recall_announcement"
+}
