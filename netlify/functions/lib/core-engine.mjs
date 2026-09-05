@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import {append,getJSON,setJSON} from './core-store.mjs';
-import {buildSafeplateCorrelation,canonicalId,validateSafeplateRecord} from './core-pipeline.mjs';
+import {applyReviewDecision,buildSafeplateCorrelation,canonicalId,validateSafeplateRecord} from './core-pipeline.mjs';
 
 const now=()=>new Date().toISOString();
 const h=o=>crypto.createHash('sha256').update(JSON.stringify(o)).digest('hex');
@@ -28,8 +28,7 @@ export async function ingestSafeplate(record){
 
 export async function reviewFinding(findingId,decision,reviewer='human-reviewer',notes=''){
   const findings=await getJSON('findings',{});const f=findings[findingId];if(!f)throw new Error('FINDING_NOT_FOUND');
-  if(!['APPROVED','REJECTED'].includes(decision))throw new Error('INVALID_DECISION');
-  f.reviewStatus=decision;f.humanApproved=decision==='APPROVED';f.review={reviewer,notes,timestamp:now()};findings[findingId]=f;await setJSON('findings',findings);await audit('FINDING_REVIEWED',{findingId,decision,reviewer});return f;
+  const reviewed=applyReviewDecision(f,decision,reviewer,notes);findings[findingId]=reviewed;await setJSON('findings',findings);await audit('FINDING_REVIEWED',{findingId,decision,reviewer});return reviewed;
 }
 
-export {audit,buildSafeplateCorrelation,validateSafeplateRecord};
+export {audit,applyReviewDecision,buildSafeplateCorrelation,validateSafeplateRecord};
