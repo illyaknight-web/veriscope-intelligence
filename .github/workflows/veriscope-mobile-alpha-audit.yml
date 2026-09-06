@@ -1,0 +1,26 @@
+name: VERISCOPE mobile alpha audit
+on:
+  push:
+    paths:
+      - '.github/workflows/veriscope-mobile-alpha-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect access terminal and mobile selectors
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          s=Path('veriscope-alpha-command.html').read_text()
+          for needle in ['ACCESS TERMINAL','SELECT YOUR ENVIRONMENT','ENTER VERISCOPE','mobileNav','access','hero','terminal']:
+              print('\n###', needle)
+              i=s.lower().find(needle.lower())
+              if i>=0:
+                  print(s[max(0,i-900):i+1800])
+          print('\n### MEDIA QUERIES')
+          for m in re.finditer(r'@media[^\{]+\{',s):
+              print(s[m.start():m.start()+2200])
