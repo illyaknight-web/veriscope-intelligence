@@ -1,8 +1,12 @@
 name: VERISCOPE mobile alpha upgrade
 on:
+  push:
+    paths:
+      - 'veriscope-alpha-command.html'
+      - '.github/workflows/veriscope-mobile-alpha-upgrade-v2.yml'
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   upgrade:
     if: github.actor != 'github-actions[bot]'
