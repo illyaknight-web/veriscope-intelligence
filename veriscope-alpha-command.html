@@ -4,9 +4,53 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>VERISCOPE™ CORE — Global Intelligence Command</title>
-<meta http-equiv="refresh" content="0; url=/veriscope-alpha-command-v3.html">
-<script>location.replace('/veriscope-alpha-command-v3.html'+location.search+location.hash);</script>
-<style>html,body{margin:0;background:#02070d;color:#edf6ff;font-family:Inter,Segoe UI,Arial,sans-serif;height:100%}body{display:grid;place-items:center}.boot{letter-spacing:.18em;font-size:12px;color:#8fb4d1}.boot b{color:#f3b742}</style>
+<style>
+html,body{margin:0;min-height:100%;background:#02070d;color:#edf6ff;font-family:Inter,Segoe UI,Arial,sans-serif}.boot{min-height:100vh;display:grid;place-items:center;letter-spacing:.18em;font-size:12px;color:#8fb4d1}.boot b{color:#f3b742}
+</style>
 </head>
-<body><div class="boot">VERISCOPE™ <b>CORE</b> · INITIALIZING COMMAND</div></body>
+<body><div class="boot">VERISCOPE™ <b>CORE</b> · INITIALIZING COMMAND</div>
+<script>
+(async()=>{
+  try{
+    const r=await fetch('/veriscope-alpha-command-v2.html',{cache:'no-store'});
+    if(!r.ok) throw new Error('BASE_'+r.status);
+    let html=await r.text();
+    const mapPatch=`<style id="vs-night-map-patch">
+/* VERISCOPE COMMAND MAP — APPROVED NIGHT-EARTH DIRECTION */
+.mapPanel{background:#020914!important;isolation:isolate}
+.mapScene{background:
+ linear-gradient(180deg,rgba(0,18,36,.12),rgba(0,6,15,.24)),
+ radial-gradient(circle at 49% 46%,rgba(19,111,196,.12),transparent 42%),
+ url('https://assets.science.nasa.gov/content/dam/science/esd/eo/images/imagerecords/144000/144898/BlackMarble_2016_01deg.jpg') center 48%/cover no-repeat!important;
+ box-shadow:inset 0 0 90px rgba(0,0,0,.55),inset 0 0 26px rgba(54,156,255,.12);}
+.mapScene:before{z-index:2!important;background-image:linear-gradient(rgba(56,138,205,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(56,138,205,.10) 1px,transparent 1px)!important;background-size:86px 86px!important;opacity:.34!important;mix-blend-mode:screen}
+.mapScene:after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 24% 34%,rgba(30,140,255,.13),transparent 18%),radial-gradient(circle at 50% 29%,rgba(255,183,66,.10),transparent 15%),radial-gradient(circle at 73% 38%,rgba(255,80,88,.08),transparent 14%),linear-gradient(180deg,rgba(15,68,118,.06),rgba(0,0,0,.03));mix-blend-mode:screen}
+.world{z-index:3!important;filter:drop-shadow(0 0 11px rgba(52,153,255,.30))!important}
+.world .land,.world .landGlow{display:none!important}
+.arc{stroke-width:1.35!important;opacity:.82!important;filter:drop-shadow(0 0 5px rgba(73,166,255,.75))}
+.arc.gold{filter:drop-shadow(0 0 6px rgba(243,181,69,.78))}.arc.red{filter:drop-shadow(0 0 7px rgba(255,80,88,.82))}.arc.faint{opacity:.46!important}
+.marker{z-index:5!important;width:11px!important;height:11px!important;animation:vsSignal 2.7s ease-in-out infinite alternate}
+@keyframes vsSignal{to{transform:scale(1.13);filter:brightness(1.18)}}
+.label{z-index:6!important;font-weight:700!important;letter-spacing:.025em!important;text-shadow:0 1px 3px #000,0 0 12px #000,0 0 5px rgba(20,83,134,.95)!important}.label span{font-weight:500!important;color:#c4d5e3!important}
+/* place labels against the actual NASA geography */
+.m1{left:23%!important;top:35%!important}.l1{left:8%!important;top:31%!important}
+.m2{left:31%!important;top:68%!important}.l2{left:18%!important;top:70%!important}
+.m3{left:50%!important;top:30%!important}.l3{left:51%!important;top:20%!important}
+.m4{left:51%!important;top:61%!important}.l4{left:53%!important;top:61%!important}
+.m5{left:75%!important;top:39%!important}.l5{left:80%!important;top:33%!important}
+.m6{left:85%!important;top:71%!important}.l6{left:85%!important;top:76%!important}
+.mapTitle,.toggles,.stats{z-index:8!important}
+@media(max-width:860px){.mapScene{background-position:center 46%!important}.label{font-size:8px!important}.label span{font-size:6px!important}.mapScene:before{background-size:60px 60px!important}}
+</style>`;
+    const provenance=`<div id="vsMapCredit" style="position:absolute;right:12px;bottom:87px;z-index:9;font-size:6px;letter-spacing:.08em;color:rgba(190,211,229,.58);pointer-events:none">BASEMAP: NASA BLACK MARBLE · VIIRS 2016</div>`;
+    html=html.replace('</head>',mapPatch+'</head>');
+    html=html.replace('<div class="stats">',provenance+'<div class="stats">');
+    document.open();document.write(html);document.close();
+  }catch(e){
+    document.body.innerHTML='<div class="boot">VERISCOPE™ <b>CORE</b> · COMMAND LOAD ERROR</div>';
+    console.error(e);
+  }
+})();
+</script>
+</body>
 </html>
