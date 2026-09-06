@@ -1,0 +1,91 @@
+name: VERISCOPE mobile alpha upgrade
+on:
+  push:
+    paths:
+      - '.github/workflows/veriscope-mobile-alpha-upgrade.yml'
+permissions:
+  contents: write
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply mobile alpha visual upgrades
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('veriscope-alpha-command.html')
+          s=p.read_text()
+          marker='/* VERISCOPE MOBILE ALPHA PASS 2026-09-05 */'
+          if marker in s:
+              raise SystemExit('already patched')
+          css=r'''
+<style>
+/* VERISCOPE MOBILE ALPHA PASS 2026-09-05 */
+.accessHeroAlpha{position:relative;overflow:hidden;isolation:isolate;background:radial-gradient(circle at 18% 38%,rgba(23,108,184,.68),transparent 31%),radial-gradient(circle at 37% 10%,rgba(240,169,59,.15),transparent 10%),linear-gradient(112deg,#07192c 0%,#061322 42%,#02060b 68%,#0a1a2d 100%)!important}
+.accessHeroAlpha:before{content:"";position:absolute;inset:-8%;z-index:-2;background:radial-gradient(circle at 29% 19%,#fff 0 1px,transparent 2px),radial-gradient(circle at 17% 49%,#5db5ff 0 1.5px,transparent 2.5px),radial-gradient(circle at 39% 56%,#ffc24b 0 1.5px,transparent 2.5px),radial-gradient(circle at 46% 33%,#ffc24b 0 1.5px,transparent 2.5px),radial-gradient(circle at 62% 47%,#5db5ff 0 1px,transparent 2px),radial-gradient(circle at 72% 28%,#ffc24b 0 1px,transparent 2px),radial-gradient(circle at 78% 58%,#5db5ff 0 1px,transparent 2px)}
+.accessHeroAlpha:after{content:"";position:absolute;width:78%;aspect-ratio:1;border-radius:50%;left:-12%;top:-24%;z-index:-1;background:radial-gradient(circle at 34% 34%,rgba(83,164,235,.45),rgba(10,47,79,.92) 40%,#02060b 68%);box-shadow:inset -80px -20px 90px rgba(0,0,0,.88),0 0 100px rgba(41,132,218,.18);border:1px solid rgba(99,167,222,.12)}
+.accessPanelAlpha{background:linear-gradient(180deg,rgba(10,24,38,.98),rgba(6,14,24,.98))!important;border:1px solid rgba(94,160,225,.48)!important;box-shadow:0 30px 80px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.02)}
+.accessRoleAlpha{transition:.22s ease!important;border:1px solid rgba(85,136,188,.38)!important;background:linear-gradient(180deg,rgba(12,30,47,.94),rgba(8,20,32,.94))!important}
+.accessRoleAlpha:hover,.accessRoleAlpha.active{border-color:#64b6ff!important;background:linear-gradient(180deg,rgba(14,45,72,.98),rgba(9,28,45,.98))!important;box-shadow:0 0 0 1px rgba(100,182,255,.13),0 12px 35px rgba(0,0,0,.28)!important}
+.accessEnterAlpha{background:linear-gradient(90deg,#d9952f,#ffc24b,#d9952f)!important;color:#07101a!important;border:0!important;font-weight:700!important;letter-spacing:.08em!important;box-shadow:0 10px 28px rgba(240,169,59,.18)!important}
+.mobileNav{-webkit-overflow-scrolling:touch;scrollbar-width:none}.mobileNav::-webkit-scrollbar{display:none}
+@media(max-width:760px){
+  html,body{overflow-x:hidden}
+  .topbar{height:auto!important;min-height:0!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-areas:"brand meta" "search search"!important;gap:10px 12px!important;padding:16px 20px 12px!important;position:relative!important}
+  .topbar>.brand{grid-area:brand;min-width:0}.wordmark{font-size:21px!important;letter-spacing:.18em!important}.brandSub{font-size:8.5px!important;letter-spacing:.15em!important;line-height:1.28!important}.brandTruth{font-size:8px!important;letter-spacing:.13em!important}
+  .topMeta{grid-area:meta;gap:10px!important;align-self:center}.topMeta .clock,.topMeta .systemState,.topMeta .userName,.topMeta .userRole{display:none!important}.topMeta .user{padding-left:10px!important}.avatar{width:44px!important;height:44px!important;font-size:11px!important}.demoChip{font-size:8px!important;padding:7px 10px!important}
+  .search{grid-area:search;height:48px!important;max-width:none!important;margin:0!important;border-radius:6px!important;background:#091522!important}.search input{font-size:13px!important}.shortcut{font-size:9px!important}
+  .shell{display:block!important;min-height:0!important}.sidebar{display:none!important}.main{padding:10px 12px 76px!important}
+  .mobileNav{display:flex!important;width:100%!important;overflow-x:auto!important;white-space:nowrap!important;position:relative!important;top:auto!important;background:#08131f!important;border-top:1px solid var(--line)!important;border-bottom:1px solid var(--lineStrong)!important;z-index:30!important;scroll-snap-type:x proximity}
+  .mobileNav button{flex:0 0 auto!important;min-width:118px!important;height:46px!important;padding:0 18px!important;scroll-snap-align:start!important;font-size:9px!important;letter-spacing:.06em!important}
+  .commandGrid{grid-template-columns:1fr!important;gap:12px!important}.mapPanel{min-height:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+  .mapHeader{position:relative!important;left:auto!important;right:auto!important;top:auto!important;padding:18px 18px 8px!important;display:block!important}.mapTitle{font-size:14px!important;letter-spacing:.15em!important;line-height:1.35!important}.mapSub{font-size:8px!important;line-height:1.45!important}.toggleGroup{margin-top:14px!important;display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:6px!important}.toggle{padding:0 7px!important;height:38px!important;font-size:7px!important}
+  .worldWrap{position:relative!important;inset:auto!important;height:465px!important;flex:0 0 465px!important;background:radial-gradient(circle at 50% 46%,rgba(20,77,126,.22),transparent 45%)!important}.regionLabel{font-size:8.5px!important}.regionLabel span{font-size:7px!important}.marker{width:11px!important;height:11px!important}
+  .mapStats{position:relative!important;left:auto!important;right:auto!important;bottom:auto!important;height:auto!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}.statCard{min-height:104px!important;padding:14px!important;border-bottom:1px solid var(--line)!important}.statCard:nth-child(5){grid-column:1/-1!important}.statNum{font-size:25px!important}.statLabel{font-size:8px!important;line-height:1.35!important}.spark{width:58px!important;height:22px!important;right:12px!important;bottom:11px!important}
+  .rightCol{grid-template-columns:1fr!important;grid-template-rows:auto!important;gap:12px!important}.panel{box-shadow:none!important}.panelHead{height:42px!important;padding:0 14px!important}.sysRow,.priorityRow,.activityRow{min-height:42px!important;padding-left:14px!important;padding-right:14px!important}
+  .investigation{grid-template-columns:1fr!important;min-height:0!important}.invMain{border-right:0!important}.invHeader{height:auto!important;min-height:0!important;padding:14px!important;display:block!important}.invActions{margin-top:12px!important;overflow-x:auto!important}.tabs{height:42px!important}.tab{font-size:8px!important;padding:0 14px!important}.graphArea{height:470px!important}.gnode{min-width:88px!important;max-width:135px!important;font-size:7px!important;padding:6px!important}.gnode .orb{width:24px!important;height:24px!important}.entityPanel,.timelinePanel{border-top:1px solid var(--lineStrong)!important}.timelinePanel{min-height:330px!important}
+  .sectionHead{padding:18px!important}.sectionTitle{font-size:26px!important;line-height:1.08!important}.sectionSub{font-size:9px!important;line-height:1.55!important}.sectionBody{padding:12px!important}.dataGrid{grid-template-columns:1fr!important}.dataCard{min-height:0!important;padding:16px!important}.workspaceGrid{grid-template-columns:1fr!important}.deepGraph{height:500px!important}.tableRow,.adapterTable .tableRow{grid-template-columns:110px minmax(170px,1.4fr) minmax(130px,1fr) 90px!important}.caseTable,.sourceTable,.adapterTable{overflow-x:auto!important}.caseTimeline{grid-template-columns:1fr 1fr!important}
+  .accessHeroAlpha{min-height:500px!important;padding:42px 22px 38px!important;display:flex!important;flex-direction:column!important;justify-content:flex-end!important}.accessHeroAlpha:after{width:118%!important;left:-43%!important;top:-25%!important}.accessHeroAlpha h1,.accessHeroAlpha [class*="title"]{max-width:100%!important}
+  .accessPanelAlpha{margin:16px 10px 0!important;padding:22px 14px!important}.accessRoleAlpha{min-height:96px!important;margin-bottom:10px!important;padding:14px 16px!important}.accessEnterAlpha{min-height:50px!important;width:100%!important;margin-top:10px!important}
+}
+@media(min-width:761px) and (max-width:1180px){.commandGrid{grid-template-columns:1fr 300px}.investigation{grid-template-columns:minmax(0,1fr) 280px}.timelinePanel{grid-column:1/-1}.mapStats{grid-template-columns:repeat(5,minmax(120px,1fr));overflow-x:auto}}
+</style>
+'''
+          js=r'''
+<script>
+(function(){
+  function addByExact(text, cls, climb){
+    const el=[...document.querySelectorAll('body *')].find(x=>x.children.length===0 && x.textContent.trim().toUpperCase()===text.toUpperCase());
+    if(!el)return null; let n=el;
+    for(let i=0;i<(climb||1)&&n.parentElement;i++)n=n.parentElement;
+    n.classList.add(cls); return n;
+  }
+  const term=[...document.querySelectorAll('body *')].find(x=>x.textContent.trim().toUpperCase()==='ACCESS TERMINAL');
+  if(term){let n=term;while(n&&n!==document.body){const t=n.textContent||'';if(t.includes('SELECT YOUR ENVIRONMENT')&&t.toUpperCase().includes('ENTER VERISCOPE')){n.classList.add('accessPanelAlpha');break}n=n.parentElement}}
+  const hero=[...document.querySelectorAll('body *')].find(x=>x.children.length===0&&x.textContent.trim().toUpperCase().replace('™','')==='VERISCOPE');
+  if(hero){let n=hero;while(n&&n!==document.body){const t=n.textContent||'';if(t.toUpperCase().includes('EVIDENCE INTELLIGENCE FOR A MORE SECURE WORLD')){n.classList.add('accessHeroAlpha');break}n=n.parentElement}}
+  ['EXECUTIVE','ANALYST','EXTERNAL'].forEach(label=>{const el=[...document.querySelectorAll('body *')].find(x=>x.children.length===0&&x.textContent.trim().toUpperCase()===label);if(el){let n=el;for(let i=0;i<5&&n&&n!==document.body;i++,n=n.parentElement){if((n.textContent||'').length<240&&(n.tagName==='BUTTON'||n.getAttribute('role')==='button'||n.onclick||n.className)){n.classList.add('accessRoleAlpha');break}}}});
+  const enter=[...document.querySelectorAll('button,a')].find(x=>x.textContent.toUpperCase().includes('ENTER VERISCOPE'));if(enter)enter.classList.add('accessEnterAlpha');
+})();
+</script>
+'''
+          s=s.replace('</head>',css+'</head>',1)
+          s=s.replace('</body>',js+'</body>',1)
+          p.write_text(s)
+      - name: Validate targeted mobile alpha pass
+        shell: python
+        run: |
+          from pathlib import Path
+          s=Path('veriscope-alpha-command.html').read_text()
+          checks=['VERISCOPE MOBILE ALPHA PASS 2026-09-05','accessHeroAlpha','accessPanelAlpha','grid-template-columns:repeat(2,minmax(0,1fr))','statCard:nth-child(5)','worldWrap{position:relative']
+          missing=[x for x in checks if x not in s]
+          if missing: raise SystemExit('Missing '+str(missing))
+          print('validated')
+      - name: Commit upgraded target
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add veriscope-alpha-command.html
+          git commit -m "Upgrade VERISCOPE mobile command and access terminal toward alpha reference"
+          git push
