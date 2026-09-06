@@ -1,0 +1,23 @@
+name: VERISCOPE illuminated map alpha pass v2
+on:
+  push:
+    paths:
+      - '.github/workflows/veriscope-map-alpha-pass-v2.yml'
+permissions:
+  contents: write
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply map upgrade
+        run: python scripts/veriscope_map_alpha_pass.py
+      - name: Validate
+        run: grep -q 'VERISCOPE ILLUMINATED MAP ALPHA PASS' veriscope-alpha-command.html
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add veriscope-alpha-command.html
+          git commit -m "Upgrade VERISCOPE world map to illuminated alpha treatment"
+          git push
