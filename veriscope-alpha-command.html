@@ -26,25 +26,51 @@ html,body{margin:0;min-height:100%;background:#02070d;color:#edf6ff;font-family:
 .mapScene:before{z-index:2!important;background-image:linear-gradient(rgba(56,138,205,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(56,138,205,.10) 1px,transparent 1px)!important;background-size:86px 86px!important;opacity:.34!important;mix-blend-mode:screen}
 .mapScene:after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 24% 34%,rgba(30,140,255,.13),transparent 18%),radial-gradient(circle at 50% 29%,rgba(255,183,66,.10),transparent 15%),radial-gradient(circle at 73% 38%,rgba(255,80,88,.08),transparent 14%),linear-gradient(180deg,rgba(15,68,118,.06),rgba(0,0,0,.03));mix-blend-mode:screen}
 .world{z-index:3!important;filter:drop-shadow(0 0 11px rgba(52,153,255,.30))!important}
-.world .land,.world .landGlow{display:none!important}
-.arc{stroke-width:1.35!important;opacity:.82!important;filter:drop-shadow(0 0 5px rgba(73,166,255,.75))}
-.arc.gold{filter:drop-shadow(0 0 6px rgba(243,181,69,.78))}.arc.red{filter:drop-shadow(0 0 7px rgba(255,80,88,.82))}.arc.faint{opacity:.46!important}
-.marker{z-index:5!important;width:11px!important;height:11px!important;animation:vsSignal 2.7s ease-in-out infinite alternate}
+.world .land,.world .landGlow,.world .arc{display:none!important}
+.marker{z-index:6!important;width:11px!important;height:11px!important;animation:vsSignal 2.7s ease-in-out infinite alternate}
 @keyframes vsSignal{to{transform:scale(1.13);filter:brightness(1.18)}}
-.label{z-index:6!important;font-weight:700!important;letter-spacing:.025em!important;text-shadow:0 1px 3px #000,0 0 12px #000,0 0 5px rgba(20,83,134,.95)!important}.label span{font-weight:500!important;color:#c4d5e3!important}
-/* place labels against the actual NASA geography */
-.m1{left:23%!important;top:35%!important}.l1{left:8%!important;top:31%!important}
-.m2{left:31%!important;top:68%!important}.l2{left:18%!important;top:70%!important}
-.m3{left:50%!important;top:30%!important}.l3{left:51%!important;top:20%!important}
-.m4{left:51%!important;top:61%!important}.l4{left:53%!important;top:61%!important}
-.m5{left:75%!important;top:39%!important}.l5{left:80%!important;top:33%!important}
-.m6{left:85%!important;top:71%!important}.l6{left:85%!important;top:76%!important}
-.mapTitle,.toggles,.stats{z-index:8!important}
-@media(max-width:860px){.mapScene{background-position:center 46%!important}.label{font-size:8px!important}.label span{font-size:6px!important}.mapScene:before{background-size:60px 60px!important}}
+.label{z-index:7!important;font-weight:700!important;letter-spacing:.025em!important;text-shadow:0 1px 3px #000,0 0 12px #000,0 0 5px rgba(20,83,134,.95)!important}.label span{font-weight:500!important;color:#c4d5e3!important}
+.m1{left:23.5%!important;top:36%!important}.l1{left:8%!important;top:31%!important}
+.m2{left:31.8%!important;top:68%!important}.l2{left:18%!important;top:70%!important}
+.m3{left:50.8%!important;top:30.5%!important}.l3{left:51%!important;top:20%!important}
+.m4{left:52%!important;top:61%!important}.l4{left:53.2%!important;top:61%!important}
+.m5{left:75.3%!important;top:39.5%!important}.l5{left:80%!important;top:33%!important}
+.m6{left:85.2%!important;top:71%!important}.l6{left:85%!important;top:76%!important}
+.mapTitle,.toggles,.stats{z-index:10!important}
+.vs-route-layer{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:visible}.vs-route{fill:none;stroke-width:1.3;stroke-linecap:round;opacity:.84;stroke-dasharray:6 8;filter:drop-shadow(0 0 4px currentColor);animation:vsRouteFlow 11s linear infinite}.vs-route.blue{stroke:#49a6ff;color:#49a6ff}.vs-route.gold{stroke:#f3b742;color:#f3b742}.vs-route.red{stroke:#ff5660;color:#ff5660}.vs-route.faint{opacity:.48}@keyframes vsRouteFlow{to{stroke-dashoffset:-120}}
+/* Evidence graph: dynamic relationship layer replaces floating/disconnected CSS lines */
+.graph{isolation:isolate}.graph>.edge{display:none!important}.vs-graph-links{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;overflow:visible}.vs-graph-link{fill:none;stroke:#587997;stroke-width:1.25;opacity:.86;filter:drop-shadow(0 0 3px rgba(73,166,255,.2))}.vs-graph-link.primary{stroke:#f3b742;stroke-width:1.45}.vs-graph-link.verified{stroke:#42e8a0;stroke-width:1.35}.vs-graph-link.alert{stroke:#ff5660;stroke-width:1.35}.graph>.node{z-index:3!important}
+@media(max-width:860px){.mapScene{background-position:center 46%!important}.label{font-size:8px!important}.label span{font-size:6px!important}.mapScene:before{background-size:60px 60px!important}.vs-route{stroke-width:1.05}}
 </style>`;
     const provenance=`<div id="vsMapCredit" style="position:absolute;right:12px;bottom:87px;z-index:9;font-size:6px;letter-spacing:.08em;color:rgba(190,211,229,.58);pointer-events:none">BASEMAP: NASA BLACK MARBLE · VIIRS 2016</div>`;
+    const connectScript=`<script id="vs-connectivity-patch">
+(function(){
+  function center(el,host){const a=el.getBoundingClientRect(),h=host.getBoundingClientRect();return{x:a.left-h.left+a.width/2,y:a.top-h.top+a.height/2}}
+  function curve(a,b,bend){const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;const nx=-dy/len,ny=dx/len;const cx=mx+nx*bend,cy=my+ny*bend;return 'M'+a.x+','+a.y+' Q'+cx+','+cy+' '+b.x+','+b.y}
+  function drawMapRoutes(){
+    const host=document.getElementById('mapScene'); if(!host)return;
+    let svg=host.querySelector('.vs-route-layer'); if(!svg){svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','vs-route-layer');host.appendChild(svg)}
+    const w=host.clientWidth,h=host.clientHeight;svg.setAttribute('viewBox','0 0 '+w+' '+h);svg.setAttribute('width',w);svg.setAttribute('height',h);svg.innerHTML='';
+    const ms=[...host.querySelectorAll('.marker')]; if(ms.length<6)return; const p=ms.map(m=>center(m,host));
+    const routes=[[0,2,'blue',-58],[0,4,'gold',-24],[2,4,'red',-48],[1,4,'gold',-18],[2,5,'gold',-34],[0,5,'blue',-72],[3,2,'blue',32],[3,4,'gold',20]];
+    routes.forEach((r,i)=>{const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('class','vs-route '+r[2]+(i===5?' faint':''));path.setAttribute('d',curve(p[r[0]],p[r[1]],r[3]));svg.appendChild(path)})
+  }
+  function drawGraphLinks(){
+    const host=document.querySelector('.graph'); if(!host)return;
+    let svg=host.querySelector('.vs-graph-links');if(!svg){svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','vs-graph-links');host.prepend(svg)}
+    const w=host.clientWidth,h=host.clientHeight;svg.setAttribute('viewBox','0 0 '+w+' '+h);svg.innerHTML='';
+    const get=(c)=>host.querySelector('.'+c); const company=get('company'); if(!company)return;
+    const links=[['financial','company',''],['shipping','company',''],['regulatory','company',''],['company','product','primary'],['company','facility','verified'],['company','event','alert'],['company','review','verified']];
+    links.forEach(([a,b,cls])=>{const A=get(a),B=get(b);if(!A||!B)return;const pa=center(A,host),pb=center(B,host);const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('class','vs-graph-link '+cls);path.setAttribute('d',curve(pa,pb,0));svg.appendChild(path)})
+  }
+  let raf;function redraw(){cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{drawMapRoutes();drawGraphLinks()})}
+  redraw();setTimeout(redraw,120);setTimeout(redraw,650);window.addEventListener('resize',redraw,{passive:true});
+  if('ResizeObserver'in window){const ro=new ResizeObserver(redraw);const m=document.getElementById('mapScene'),g=document.querySelector('.graph');if(m)ro.observe(m);if(g)ro.observe(g)}
+})();
+<\/script>`;
     html=html.replace('</head>',mapPatch+'</head>');
     html=html.replace('<div class="stats">',provenance+'<div class="stats">');
+    html=html.replace('</body>',connectScript+'</body>');
     document.open();document.write(html);document.close();
   }catch(e){
     document.body.innerHTML='<div class="boot">VERISCOPE™ <b>CORE</b> · COMMAND LOAD ERROR</div>';
