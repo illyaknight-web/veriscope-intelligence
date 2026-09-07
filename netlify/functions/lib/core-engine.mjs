@@ -16,7 +16,8 @@ async function audit(action,payload){
 export async function ingestSafeplate(record){
   const check=validateSafeplateRecord(record);if(!check.valid)throw new Error(`SCHEMA_VALIDATION: ${check.errors.join('; ')}`);
   const records=await getJSON('source_records',{}),prior=records[record.id],hash=contentHash(record);
-  if(prior?.contentHash===hash){await audit('SAFEPLATE_DUPLICATE_SUPPRESSED',{sourceRecordId:record.id,contentHash:hash});return {duplicate:true,sourceRecordId:record.id,graph:(await getJSON('graphs',{}))[canonicalId('graph',record.id)]||null,finding:(await getJSON('findings',{}))[canonicalId('finding',record.id)]||null}}
+  const existingGraph=(await getJSON('graphs',{}))[canonicalId('graph',record.id)]||null;
+  if(prior?.contentHash===hash&&existingGraph?.analysisVersion==='core-pipeline.v1.1'){await audit('SAFEPLATE_DUPLICATE_SUPPRESSED',{sourceRecordId:record.id,contentHash:hash,analysisVersion:existingGraph.analysisVersion});return {duplicate:true,sourceRecordId:record.id,graph:existingGraph,finding:(await getJSON('findings',{}))[canonicalId('finding',record.id)]||null}}
   const change=prior?{type:'UPDATED',fields:changedFields(prior.record,record)}:{type:'NEW',fields:Object.keys(record)};
   records[record.id]={record,contentHash:hash,firstSeenAt:prior?.firstSeenAt||now(),lastSeenAt:now(),previousContentHash:prior?.contentHash||null,change};await setJSON('source_records',records);
   const {graph,finding,entities}=buildSafeplateCorrelation(record);
