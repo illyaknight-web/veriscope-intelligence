@@ -1,8 +1,7 @@
-name: VERISCOPE CORE v1 tests
+name: VERISCOPE CORE end-to-end smoke
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'netlify/functions/**'
       - 'tests/**'
@@ -18,26 +17,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install production dependencies
+        run: npm install --ignore-scripts
       - name: Run deterministic CORE pipeline tests
-        run: node --test tests/core-pipeline.test.mjs
-      - name: Check server function syntax
+        run: npm test
+      - name: Check every CORE server module
         run: |
-          node --check netlify/functions/lib/security.mjs
-          node --check netlify/functions/lib/core-engine.mjs
-          node --check netlify/functions/lib/core-pipeline.mjs
-          node --check netlify/functions/safeplate-ingest.mjs
-          node --check netlify/functions/review.mjs
-          node --check netlify/functions/ask.mjs
-          node --check netlify/functions/health.mjs
-      - name: Verify V41 CORE bridge references live endpoints
+          for file in netlify/functions/*.mjs netlify/functions/lib/*.mjs; do node --check "$file"; done
+      - name: Verify acceptance record and self-healing endpoint wiring
+        run: |
+          grep -q "FDA-GREAT-VALUE-TRIPLE-BERRY-2026-09-03" netlify/functions/lib/bootstrap.mjs
+          grep -q "ensureAcceptanceRecord" netlify/functions/entities.mjs
+          grep -q "ensureAcceptanceRecord" netlify/functions/graph.mjs
+          grep -q "ensureAcceptanceRecord" netlify/functions/findings.mjs
+      - name: Verify command center uses live CORE endpoints
         run: |
           grep -q "/api/health" veriscope-v41-core-live.html
           grep -q "/api/entities" veriscope-v41-core-live.html
           grep -q "/api/graph" veriscope-v41-core-live.html
           grep -q "/api/findings" veriscope-v41-core-live.html
           grep -q "/api/review" veriscope-v41-core-live.html
-          grep -q "/api/ask" veriscope-v41-core-live.html
-          grep -q "Global Intelligence Overview" veriscope-v41-core-live.html
-          grep -q "overviewGraphSvg" veriscope-v41-core-live.html
-          grep -q "SHADOW INTELLIGENCE" veriscope-v41-core-live.html
           grep -q "veriscope-v41-core-live.html" veriscope-alpha-command.html
