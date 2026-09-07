@@ -4,7 +4,8 @@ const STORE_NAME='veriscope-core-v1-shadow';
 const store=()=>getStore({name:STORE_NAME,consistency:'strong'});
 
 export async function getJSON(key,fallback=null){
-  try{return (await store().get(key,{type:'json'}))??fallback}catch{return fallback}
+  const value=await store().get(key,{type:'json'});
+  return value??fallback;
 }
 export async function setJSON(key,value){await store().setJSON(key,value);return value}
 export async function append(key,item,max=5000){
