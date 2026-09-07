@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {applyReviewDecision,buildSafeplateCorrelation,validateSafeplateRecord} from '../netlify/functions/lib/core-pipeline.mjs';
+import {fromSafeplateContract} from '../netlify/functions/lib/safeplate-contract.mjs';
 
 const recall=JSON.parse(fs.readFileSync(new URL('./fixtures/safeplate-great-value-triple-berry-2026.json',import.meta.url),'utf8'));
 
@@ -58,6 +59,22 @@ test('confidence is separate from domain risk',()=>{
   assert.notEqual(String(finding.confidence),String(finding.risk.value));
 });
 
+test('name-only entities are source-scoped and never auto-merged',()=>{
+  const first=buildSafeplateCorrelation(recall).entities.find(e=>e.type==='Company');
+  const secondRecord={...recall,id:recall.id+'-SECOND'};
+  const second=buildSafeplateCorrelation(secondRecord).entities.find(e=>e.type==='Company');
+  assert.notEqual(first.id,second.id);
+  assert.equal(first.match.autoMergeEligible,false);
+  assert.equal(first.match.scoreStatus,'UNVALIDATED_SHADOW_SCORE');
+});
+
+test('documented distribution states become evidence-backed graph nodes',()=>{
+  const {entities,edges,finding}=buildSafeplateCorrelation(recall);
+  assert.ok(entities.find(e=>e.type==='State'));
+  assert.ok(edges.find(e=>e.type==='PRODUCT_DISTRIBUTED_TO'));
+  assert.equal(finding.usExposure,'U.S. EXPOSURE CONFIRMED');
+});
+
 test('human review is required and can explicitly approve the finding',()=>{
   const {finding}=buildSafeplateCorrelation(recall);
   assert.equal(finding.humanApproved,false);
@@ -65,4 +82,20 @@ test('human review is required and can explicitly approve the finding',()=>{
   assert.equal(reviewed.reviewStatus,'APPROVED');
   assert.equal(reviewed.humanApproved,true);
   assert.equal(reviewed.review.reviewer,'TEST_HUMAN_REVIEWER');
+});
+
+test('versioned SAFEPLATE contract maps evidence and distribution into CORE input',()=>{
+  const mapped=fromSafeplateContract({
+    safeplate_record_id:'sp-123',schema_version:'safeplate.veriscope.record.v1',record_type:'recall',
+    source:'FDA',source_record_id:'FDA-123',source_url:'https://www.fda.gov/example',
+    product:{name:'Deli salad',brand:'Northside',upc:'012345678901'},organization:{name:'Made Fresh Salads'},
+    distribution:{states:['NY','NJ'],description:'Official record lists New York and New Jersey.'},
+    hazard:'Listeria monocytogenes',intelligence_class:'OFFICIAL',
+    evidence:[{type:'AGENCY',status:'VERIFIED',source:'FDA',source_url:'https://www.fda.gov/example',text:'Official recall announcement'}]
+  });
+  assert.equal(mapped.id,'sp-123');
+  assert.equal(mapped.contractVersion,'safeplate.veriscope.record.v1');
+  assert.equal(mapped.product,'Deli salad');
+  assert.deepEqual(mapped.states,['NY','NJ']);
+  assert.equal(mapped.evidence[0].url,'https://www.fda.gov/example');
 });

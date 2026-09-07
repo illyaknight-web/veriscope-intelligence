@@ -20,12 +20,16 @@ export function confidence(method,support=1,contradictions=0){
 }
 
 function makeEntity(type,name,sourceRecord,method='source_record',identifiers=[]){
-  const key=identifiers.find(Boolean)||name;
-  return {id:canonicalId(type,key),type,name:String(name||'').trim(),aliases:[],identifiers:[...new Set(identifiers.filter(Boolean))],match:{method,confidence:confidence(method),supportingEvidence:sourceRecord.evidence||[],contradictingEvidence:[],sourceProvenance:{system:'SAFEPLATE',source:sourceRecord.source,sourceRecordId:sourceRecord.id},timestamp:now(),reviewStatus:'PENDING_HUMAN_REVIEW'}};
+  const strongIdentifier=identifiers.find(Boolean);
+  const resolvedMethod=strongIdentifier?'exact_identifier':'source_record_only';
+  // Name-only records remain scoped to the source record. They are candidates for
+  // later resolution, never automatic cross-record merges.
+  const key=strongIdentifier||`${sourceRecord.source}|${sourceRecord.id}|${type}|${name}`;
+  return {id:canonicalId(type,key),type,name:String(name||'').trim(),aliases:[],identifiers:[...new Set(identifiers.filter(Boolean))],match:{method:resolvedMethod,confidence:strongIdentifier?confidence('exact_identifier'):confidence('source_record'),scoreStatus:'UNVALIDATED_SHADOW_SCORE',autoMergeEligible:false,supportingEvidence:sourceRecord.evidence||[],contradictingEvidence:[],sourceProvenance:{system:'SAFEPLATE',source:sourceRecord.source,sourceRecordId:sourceRecord.id},timestamp:now(),reviewStatus:'PENDING_HUMAN_REVIEW'}};
 }
 
 function edge(from,to,type,record,evidence){
-  return {id:canonicalId('edge',`${from}|${type}|${to}|${record.id}`),from,to,type,evidence:(evidence||record.evidence||[]),confidence:confidence('source_record'),provenance:{category:'SAFEPLATE_NORMALIZED_RECORD',source:record.source,sourceRecordId:record.id},createdAt:now(),reviewStatus:'PENDING_HUMAN_REVIEW'};
+  return {id:canonicalId('edge',`${from}|${type}|${to}|${record.id}`),from,to,type,evidence:(evidence||record.evidence||[]),confidence:confidence('source_record'),scoreStatus:'UNVALIDATED_SHADOW_SCORE',provenance:{category:'SAFEPLATE_NORMALIZED_RECORD',source:record.source,sourceRecordId:record.id},createdAt:now(),reviewStatus:'PENDING_HUMAN_REVIEW'};
 }
 
 export function buildSafeplateCorrelation(record){
@@ -38,8 +42,10 @@ export function buildSafeplateCorrelation(record){
   if(facilityName){facility=makeEntity('Facility',facilityName,record,'exact_source_name');entities.push(facility);if(company)edges.push(edge(company.id,facility.id,'COMPANY_FACILITY',record));else edges.push(edge(product.id,facility.id,'PRODUCT_FACILITY',record));}
   if(record.hazard){hazard=makeEntity('Hazard',record.hazard,record,'source_record');entities.push(hazard);edges.push(edge(product.id,hazard.id,'PRODUCT_HAZARD',record));}
   const recall=makeEntity('Recall',record.id,record,'exact_identifier',[record.id]);entities.push(recall);edges.push(edge(recall.id,product.id,'RECALL_PRODUCT',record));if(company)edges.push(edge(recall.id,company.id,'RECALL_COMPANY',record));
-  const graph={id:canonicalId('graph',record.id),sourceRecordId:record.id,mode:'SHADOW',entities,edges,createdAt:now()};
-  const finding={id:canonicalId('finding',record.id),sourceRecordId:record.id,what:`VERISCOPE resolved ${entities.length} supported entities and ${edges.length} evidence-backed relationships from SAFEPLATE record ${record.id}.`,why:'Relationships were emitted only where the normalized SAFEPLATE source record directly supported them. No unsupported supplier, distributor, retailer, ownership, lot or outbreak links were created.',supportingEvidence:record.evidence,contradictingEvidence:[],confidence:Number(Math.min(...edges.map(e=>e.confidence),.99).toFixed(2)),risk:{value:record.severity||null,source:'SAFEPLATE_DOMAIN_VALUE',note:'Risk/severity is stored separately from VERISCOPE confidence.'},provenance:{category:'VERISCOPE_CORRELATION',inputCategory:'SAFEPLATE_NORMALIZED_RECORD',source:record.source,sourceRecordId:record.id},timestamp:now(),humanApproved:false,reviewStatus:'PENDING_HUMAN_REVIEW'};
+  for(const code of [...new Set((record.states||[]).map(x=>String(x).toUpperCase()).filter(x=>/^[A-Z]{2}$/.test(x)))]){const state=makeEntity('State',code,record,'exact_identifier',[`US-${code}`]);entities.push(state);edges.push(edge(product.id,state.id,'PRODUCT_DISTRIBUTED_TO',record,(record.evidence||[]).filter(e=>/distribution|agency/i.test(`${e.type||''} ${e.source||''}`))))}
+  const officialUS=/\b(FDA|USDA|FSIS|CDC|United States)\b/i.test(`${record.source||''} ${record.sourceUrl||''}`),hasUSStates=(record.states||[]).length>0,usExposure=officialUS?'U.S. EXPOSURE CONFIRMED':hasUSStates?'U.S. EXPOSURE POSSIBLE':'U.S. NEXUS UNRESOLVED';
+  const graph={id:canonicalId('graph',record.id),sourceRecordId:record.id,mode:'SHADOW',analysisVersion:'core-pipeline.v1.1',entities,edges,createdAt:now()};
+  const finding={id:canonicalId('finding',record.id),sourceRecordId:record.id,what:`VERISCOPE produced ${entities.length} source-scoped entity candidates and ${edges.length} evidence-backed relationships from SAFEPLATE record ${record.id}.`,why:'Relationships were emitted only where the normalized SAFEPLATE source record directly supported them. Name-only entities were not merged across records. No unsupported supplier, distributor, retailer, ownership, lot or outbreak links were created.',supportingEvidence:record.evidence,contradictingEvidence:[],confidence:Number(Math.min(...edges.map(e=>e.confidence),.99).toFixed(2)),scoreStatus:'UNVALIDATED_SHADOW_SCORE',usExposure,risk:{value:record.severity||null,source:'SAFEPLATE_DOMAIN_VALUE',note:'Risk/severity is stored separately from VERISCOPE confidence.'},provenance:{category:'VERISCOPE_CORRELATION',inputCategory:'SAFEPLATE_NORMALIZED_RECORD',source:record.source,sourceRecordId:record.id,sourceAuthority:/\b(FDA|USDA|FSIS|CDC)\b/i.test(record.source||'')?'TIER_A_PRIMARY':'SOURCE_PRESERVED_UNRANKED'},timestamp:now(),humanApproved:false,reviewStatus:'PENDING_HUMAN_REVIEW'};
   return {graph,finding,entities,edges};
 }
 
