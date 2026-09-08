@@ -177,7 +177,7 @@ function initMap(){
  const tiles=L.tileLayer(NASA_DAY_TILES,{tileSize:256,minZoom:1,maxZoom:8,maxNativeZoom:8,noWrap:true,bounds:[[-85,-180],[85,180]],keepBuffer:3,className:'nasa-day-tiles'});
  let tileErrors=0;tiles.on('tileerror',()=>{tileErrors++;if(tileErrors===1)el.classList.add('tile-warning')});tiles.addTo(state.map);
  mapEvidenceLayers=L.layerGroup().addTo(state.map);
- state.map.on('move zoom',()=>el.classList.add('map-engaged'));
+ el.dataset.zoom=String(state.map.getZoom());state.map.on('move zoom',()=>el.classList.add('map-engaged'));state.map.on('zoomend',()=>{el.dataset.zoom=String(state.map.getZoom())});
  $('#mapFit').onclick=()=>{state.map.setView([24,-22],window.innerWidth<=760?1.2:1.5,{animate:true});setTimeout(()=>state.map.invalidateSize(),50)};
  renderIntelMarkers();setTimeout(()=>state.map.invalidateSize(),80)
 }
