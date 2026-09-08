@@ -87,7 +87,7 @@ body:before{background:radial-gradient(circle at 52% 8%,rgba(0,121,220,.18),tran
 
 
 /* PRODUCTION INTERACTIVE MAP — LOCALLY BUNDLED LEAFLET */
-#intelMap{position:absolute;inset:0;z-index:1;background:#071526;overflow:hidden;touch-action:pan-x pan-y}
+#intelMap{position:absolute;inset:0;z-index:1;background:#071526;overflow:hidden;touch-action:none}
 #intelMap .leaflet-container{background:#071526}
 #intelMap .leaflet-tile-pane{filter:saturate(1.12) brightness(1.08) contrast(1.04)}
 #intelMap .leaflet-control-zoom{border:1px solid #2d6f9e!important;border-radius:0!important;box-shadow:none!important}
@@ -97,7 +97,7 @@ body:before{background:radial-gradient(circle at 52% 8%,rgba(0,121,220,.18),tran
 #intelMap .core-map-node{filter:drop-shadow(0 0 7px #168fff);cursor:pointer}
 .core-map-tooltip{border:1px solid #367ba9!important;border-radius:0!important;background:rgba(2,12,22,.94)!important;color:#f4f9ff!important;box-shadow:none!important;font:700 9px 'IBM Plex Mono'!important;letter-spacing:.05em}
 .core-map-tooltip:before{display:none}
-.map-fit-btn{position:absolute;right:11px;bottom:85px;z-index:650;width:38px;height:31px;border:1px solid #2d6f9e;background:rgba(2,12,22,.94);color:#f4f9ff;font:800 9px 'IBM Plex Mono';cursor:pointer}
+.map-fit-btn{position:absolute;right:11px;bottom:87px;z-index:650;width:38px;height:31px;border:1px solid #2d6f9e;background:rgba(2,12,22,.94);color:#f4f9ff;font:800 9px 'IBM Plex Mono';cursor:pointer}
 .map-fit-btn:hover{background:#0d4268}
 .map-load-error{height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;color:#ff8a91;text-align:center;padding:30px}.map-load-error span{max-width:360px;color:var(--muted);font-size:10px}
 #mapEvidenceOverlay,.native-map-controls{display:none!important}
@@ -117,7 +117,7 @@ body:before{background:radial-gradient(circle at 52% 8%,rgba(0,121,220,.18),tran
  .command-grid.approved{display:block!important;width:100%;min-width:0}
  .command-grid.approved .map-card{width:100%;height:clamp(360px,108vw,470px);min-height:360px!important;max-height:470px;aspect-ratio:auto;overflow:hidden}
  #intelMap{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0}
- .map-title{left:10px;top:10px;right:10px;max-width:calc(100% - 20px);padding:9px 10px}
+ .map-title{left:10px;top:10px;right:10px;pointer-events:none;max-width:calc(100% - 20px);padding:9px 10px}
  .map-title strong{font-size:clamp(15px,5.2vw,21px);line-height:1.15}.map-title .muted{font-size:7.5px!important;line-height:1.35}
  .approved-note{left:10px;right:10px;bottom:10px;width:auto;text-align:center;font-size:7px;padding:8px}
  .map-selection{left:10px;right:58px;bottom:48px;max-width:none;padding:9px}
@@ -173,12 +173,12 @@ function initMap(){
  if(state.map){setTimeout(()=>state.map.invalidateSize(),40);return}
  const el=$('#intelMap');if(!el)return;
  if(!window.L){el.innerHTML='<div class="map-load-error"><b>MAP ENGINE FAILED TO LOAD</b><span>CORE records remain available. Reload VERISCOPE to retry the local map engine.</span></div>';return}
- state.map=L.map(el,{center:[24,-22],zoom:1.45,minZoom:1,maxZoom:8,zoomControl:true,attributionControl:false,worldCopyJump:false,maxBounds:[[-85,-180],[85,180]],maxBoundsViscosity:1});
+ state.map=L.map(el,{center:[24,-22],zoom:1.5,minZoom:1,maxZoom:8,zoomSnap:.1,zoomDelta:.5,zoomControl:false,attributionControl:false,dragging:true,touchZoom:true,scrollWheelZoom:true,doubleClickZoom:true,keyboard:true,worldCopyJump:false,maxBounds:[[-85,-180],[85,180]],maxBoundsViscosity:1});L.control.zoom({position:'bottomright'}).addTo(state.map);
  const tiles=L.tileLayer(NASA_DAY_TILES,{tileSize:256,minZoom:1,maxZoom:8,maxNativeZoom:8,noWrap:true,bounds:[[-85,-180],[85,180]],keepBuffer:3,className:'nasa-day-tiles'});
  let tileErrors=0;tiles.on('tileerror',()=>{tileErrors++;if(tileErrors===1)el.classList.add('tile-warning')});tiles.addTo(state.map);
  mapEvidenceLayers=L.layerGroup().addTo(state.map);
  state.map.on('move zoom',()=>el.classList.add('map-engaged'));
- $('#mapFit').onclick=()=>{state.map.setView([24,-22],window.innerWidth<=760?1:1.45,{animate:true});setTimeout(()=>state.map.invalidateSize(),50)};
+ $('#mapFit').onclick=()=>{state.map.setView([24,-22],window.innerWidth<=760?1.2:1.5,{animate:true});setTimeout(()=>state.map.invalidateSize(),50)};
  renderIntelMarkers();setTimeout(()=>state.map.invalidateSize(),80)
 }
 function supportedMapRecords(){
