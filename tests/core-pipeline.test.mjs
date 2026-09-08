@@ -18,10 +18,15 @@ test('recall produces source-backed entities, graph and pending human finding',(
   assert.ok(entities.find(e=>e.type==='Product'));
   assert.ok(entities.find(e=>e.type==='Company'&&e.name==='Frutas y Hortalizas del Sur S.A.'));
   assert.ok(entities.find(e=>e.type==='Facility'&&e.name==='San Carlos, Chile'));
+  assert.ok(entities.find(e=>e.type==='City'&&e.name==='San Carlos'));
+  assert.ok(entities.find(e=>e.type==='Country'&&e.name==='Chile'));
+  assert.equal(entities.find(e=>e.type==='Company').geo.city,'San Carlos');
   assert.ok(entities.find(e=>e.type==='Hazard'&&e.name==='E. coli'));
   assert.ok(entities.find(e=>e.type==='Recall'));
   assert.ok(edges.find(e=>e.type==='PRODUCT_COMPANY'));
   assert.ok(edges.find(e=>e.type==='COMPANY_FACILITY'));
+  assert.ok(edges.find(e=>e.type==='FACILITY_LOCATED_IN_CITY'));
+  assert.ok(edges.find(e=>e.type==='CITY_LOCATED_IN_COUNTRY'));
   assert.ok(edges.find(e=>e.type==='PRODUCT_HAZARD'));
   assert.ok(edges.find(e=>e.type==='RECALL_PRODUCT'));
   assert.ok(edges.find(e=>e.type==='RECALL_COMPANY'));
@@ -70,7 +75,10 @@ test('name-only entities are source-scoped and never auto-merged',()=>{
 
 test('documented distribution states become evidence-backed graph nodes',()=>{
   const {entities,edges,finding}=buildSafeplateCorrelation(recall);
-  assert.ok(entities.find(e=>e.type==='State'));
+  const state=entities.find(e=>e.type==='State');
+  assert.ok(state);
+  assert.notEqual(state.name,'AL');
+  assert.equal(state.geo.country,'United States');
   assert.ok(edges.find(e=>e.type==='PRODUCT_DISTRIBUTED_TO'));
   assert.equal(finding.usExposure,'U.S. EXPOSURE CONFIRMED');
 });
@@ -89,6 +97,7 @@ test('versioned SAFEPLATE contract maps evidence and distribution into CORE inpu
     safeplate_record_id:'sp-123',schema_version:'safeplate.veriscope.record.v1',record_type:'recall',
     source:'FDA',source_record_id:'FDA-123',source_url:'https://www.fda.gov/example',
     product:{name:'Deli salad',brand:'Northside',upc:'012345678901'},organization:{name:'Made Fresh Salads'},
+    facility:{name:'Made Fresh Salads Inc.',identifier:'FDA-EST-123',location:{city:'Woodbury',state:'NJ',country:'United States',label:'Woodbury, NJ, United States'}},
     distribution:{states:['NY','NJ'],description:'Official record lists New York and New Jersey.'},
     hazard:'Listeria monocytogenes',intelligence_class:'OFFICIAL',
     evidence:[{type:'AGENCY',status:'VERIFIED',source:'FDA',source_url:'https://www.fda.gov/example',text:'Official recall announcement'}]
@@ -97,5 +106,19 @@ test('versioned SAFEPLATE contract maps evidence and distribution into CORE inpu
   assert.equal(mapped.contractVersion,'safeplate.veriscope.record.v1');
   assert.equal(mapped.product,'Deli salad');
   assert.deepEqual(mapped.states,['NY','NJ']);
+  assert.equal(mapped.firmLocation.city,'Woodbury');
+  assert.equal(mapped.establishment.identifier,'FDA-EST-123');
   assert.equal(mapped.evidence[0].url,'https://www.fda.gov/example');
+});
+
+test('command center exposes operational controls, labeled tiles and scheduled refresh',()=>{
+  const html=fs.readFileSync(new URL('../veriscope-v41-core-live.html',import.meta.url),'utf8');
+  assert.match(html,/id="refreshBtn">REFRESH</);
+  assert.match(html,/id="demoBtn">RUN GUIDED DEMO</);
+  assert.match(html,/id="lastUpdated"/);
+  assert.match(html,/setInterval\(\(\)=>\{if\(!document\.hidden\)loadCore\('AUTO'\)\},15\*60\*1000\)/);
+  assert.match(html,/dark_only_labels/);
+  assert.match(html,/function entityGeo\(/);
+  assert.match(html,/function graphPath\(/);
+  assert.doesNotMatch(html,/entityType\(e\).*San Carlos\.\*Chile/);
 });
