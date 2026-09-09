@@ -139,6 +139,18 @@ test('command center exposes operational controls, labeled tiles and scheduled r
   assert.doesNotMatch(html,/entityType\(e\).*San Carlos\.\*Chile/);
 });
 
+test('map workspace exposes multiple SAFEPLATE trackings and reversible full-screen controls',()=>{
+  const html=fs.readFileSync(new URL('../veriscope-v41-core-live.html',import.meta.url),'utf8');
+  assert.match(html,/id="mapExpand"/);
+  assert.match(html,/EXPAND MAP/);
+  assert.match(html,/CLOSE MAP/);
+  assert.match(html,/function setMapExpanded\(/);
+  assert.match(html,/function renderMapWorkspace\(/);
+  assert.match(html,/CURRENT FOOD TRACKINGS/);
+  assert.match(html,/Records without location evidence remain listed but are never placed on the map/);
+  assert.match(html,/event\.key==='Escape'/);
+});
+
 test('reviewed feedback retries every 15 minutes',()=>{
   const scheduled=fs.readFileSync(new URL('../netlify/functions/safeplate-feedback-sync.mjs',import.meta.url),'utf8');
   assert.match(scheduled,/schedule:'\*\/15 \* \* \* \*'/);
