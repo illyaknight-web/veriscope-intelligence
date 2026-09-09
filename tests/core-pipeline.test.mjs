@@ -146,6 +146,10 @@ test('map workspace exposes multiple SAFEPLATE trackings and reversible full-scr
   assert.match(html,/CLOSE MAP/);
   assert.match(html,/function setMapExpanded\(/);
   assert.match(html,/function renderMapWorkspace\(/);
+  assert.match(html,/function recordDistributionStates\(/);
+  assert.match(html,/function focusPublishedRecordGeo\(/);
+  assert.match(html,/SELECT A TRACKING TO MOVE THE MAP/);
+  assert.match(html,/SOURCE GEOGRAPHY SELECTED/);
   assert.match(html,/CURRENT FOOD TRACKINGS/);
   assert.match(html,/Records without location evidence remain listed but are never placed on the map/);
   assert.match(html,/event\.key==='Escape'/);
