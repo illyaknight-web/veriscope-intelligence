@@ -177,3 +177,10 @@ test('public source adapter registers the approved cross-domain catalog without 
   assert.match(source,/They are not VERISCOPE findings until normalized, correlated and reviewed/);
   assert.match(source,/config=\{path:'\/api\/public-intelligence'\}/);
 });
+
+test('live public intelligence sources are refreshed on the 15-minute surveillance cycle',()=>{
+  const scheduled=fs.readFileSync(new URL('../netlify/functions/public-intelligence-sync.mjs',import.meta.url),'utf8');
+  assert.match(scheduled,/\['earth','weather','safeplate','aviation','cyber'\]/);
+  assert.match(scheduled,/config=\{schedule:'\*\/15 \* \* \* \*'\}/);
+  assert.match(scheduled,/VERISCOPE_PUBLIC_SURVEILLANCE/);
+});
