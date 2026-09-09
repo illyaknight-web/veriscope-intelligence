@@ -145,3 +145,13 @@ test('reviewed feedback retries every 15 minutes',()=>{
   assert.match(scheduled,/humanApproved===true/);
   assert.match(scheduled,/reviewStatus\)\.toUpperCase\(\)==='APPROVED'/);
 });
+
+test('SAFEPLATE batch ingestion performs one bounded store transaction',()=>{
+  const endpoint=fs.readFileSync(new URL('../netlify/functions/safeplate-ingest.mjs',import.meta.url),'utf8');
+  const engine=fs.readFileSync(new URL('../netlify/functions/lib/core-engine.mjs',import.meta.url),'utf8');
+  assert.match(endpoint,/ingestSafeplateBatch\(records\)/);
+  assert.doesNotMatch(endpoint,/for\(const record of records\)/);
+  assert.match(engine,/export async function ingestSafeplateBatch/);
+  assert.match(engine,/Promise\.all\(\[setJSON\('source_records'/);
+  assert.match(engine,/SAFEPLATE_BATCH_INGESTED/);
+});

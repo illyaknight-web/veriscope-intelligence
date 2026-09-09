@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import {ingestSafeplate} from './lib/core-engine.mjs';
+import {ingestSafeplate,ingestSafeplateBatch} from './lib/core-engine.mjs';
 import {append} from './lib/core-store.mjs';
 import {fromSafeplateContract} from './lib/safeplate-contract.mjs';
 import {authorize,json,rateLimit,readJSON} from './lib/security.mjs';
@@ -14,11 +14,7 @@ export default async function(req){
   try{
     const body=await readJSON(req,1_500_000);
     if(Array.isArray(body.records)){
-      const records=body.records.slice(0,250).map(fromSafeplateContract),results=[];
-      for(const record of records){
-        const result=await ingestSafeplate(record);
-        results.push({sourceRecordId:record.id,duplicate:Boolean(result.duplicate),graphId:result.graph?.id||null,findingId:result.finding?.id||null,change:result.change||null});
-      }
+      const records=body.records.slice(0,250).map(fromSafeplateContract),results=await ingestSafeplateBatch(records);
       return json({status:'SHADOW_BATCH_ACCEPTED',mode:'SHADOW',contractVersion:body.contract_version||null,cycleId:body.cycle_id||null,accepted:results.length,duplicates:results.filter(x=>x.duplicate).length,results},202);
     }
     const record=body?.record||body;

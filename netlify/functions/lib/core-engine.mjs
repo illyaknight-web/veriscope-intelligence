@@ -34,6 +34,34 @@ export async function ingestSafeplate(record){
   return {graph,finding,change,duplicate:false};
 }
 
+export async function ingestSafeplateBatch(inputRecords){
+  const batch=Array.isArray(inputRecords)?inputRecords:[],results=[];
+  const [records,graphs,findings,entityMap]=await Promise.all([
+    getJSON('source_records',{}),getJSON('graphs',{}),getJSON('findings',{}),getJSON('entities',{})
+  ]);
+  let changedCount=0;
+  for(const record of batch){
+    const check=validateSafeplateRecord(record);if(!check.valid)throw new Error(`SCHEMA_VALIDATION: ${check.errors.join('; ')}`);
+    const prior=records[record.id],hash=contentHash(record),graphId=canonicalId('graph',record.id),existingGraph=graphs[graphId]||null;
+    if(prior?.contentHash===hash&&existingGraph?.analysisVersion==='core-pipeline.v1.3'){
+      results.push({sourceRecordId:record.id,duplicate:true,graphId:existingGraph.id||graphId,findingId:canonicalId('finding',record.id),change:null});
+      continue;
+    }
+    const change=prior?{type:'UPDATED',fields:changedFields(prior.record,record)}:{type:'NEW',fields:Object.keys(record)};
+    records[record.id]={record,contentHash:hash,firstSeenAt:prior?.firstSeenAt||now(),lastSeenAt:now(),previousContentHash:prior?.contentHash||null,change};
+    const built=buildSafeplateCorrelation(record),graph=built.graph,finding=built.finding;
+    for(const e of built.entities){
+      const priorEntity=entityMap[e.id];
+      entityMap[e.id]=priorEntity?{...priorEntity,aliases:[...new Set([...(priorEntity.aliases||[]),...(e.aliases||[]),...(priorEntity.name!==e.name?[e.name]:[])])],identifiers:[...new Set([...(priorEntity.identifiers||[]),...(e.identifiers||[])])],lastSeenAt:now()}:({...e,firstSeenAt:now(),lastSeenAt:now()});
+    }
+    const previousGraph=graphs[graph.id];graph.version=(previousGraph?.version||0)+1;graph.sourceContentHash=hash;graph.supersedesVersion=previousGraph?.version||null;graphs[graph.id]=graph;findings[finding.id]=finding;changedCount++;
+    results.push({sourceRecordId:record.id,duplicate:false,graphId:graph.id,findingId:finding.id,change});
+  }
+  if(changedCount)await Promise.all([setJSON('source_records',records),setJSON('entities',entityMap),setJSON('graphs',graphs),setJSON('findings',findings)]);
+  await audit('SAFEPLATE_BATCH_INGESTED',{records:batch.length,changed:changedCount,duplicates:batch.length-changedCount,mode:'SHADOW'});
+  return results;
+}
+
 export async function reviewFinding(findingId,decision,reviewer='human-reviewer',notes=''){
   const findings=await getJSON('findings',{});const f=findings[findingId];if(!f)throw new Error('FINDING_NOT_FOUND');
   const reviewed=applyReviewDecision(f,decision,reviewer,notes);findings[findingId]=reviewed;await setJSON('findings',findings);
