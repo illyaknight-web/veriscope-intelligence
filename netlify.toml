@@ -11,3 +11,18 @@
 
 [functions."safeplate-sync"]
   schedule = "*/15 * * * *"
+
+# The operational CORE interface is the production entry point.
+# A forced rewrite prevents the Netlify root from falling through to a 404
+# while preserving the direct CORE URL used in meeting materials.
+[[redirects]]
+  from = "/"
+  to = "/veriscope-v41-core-live.html"
+  status = 200
+  force = true
+
+[[headers]]
+  for = "/veriscope-v41-core-live.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
