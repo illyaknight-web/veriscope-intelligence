@@ -155,3 +155,25 @@ test('SAFEPLATE batch ingestion performs one bounded store transaction',()=>{
   assert.match(engine,/Promise\.all\(\[setJSON\('source_records'/);
   assert.match(engine,/SAFEPLATE_BATCH_INGESTED/);
 });
+
+test('umbrella command exposes distinct mission-platform controls',()=>{
+  const html=fs.readFileSync(new URL('../veriscope-v41-core-live.html',import.meta.url),'utf8');
+  for(const domain of ['core','safeplate','northline','earth','maritime','land','aviation','cyber','trade','corporate']){
+    assert.match(html,new RegExp(`data-domain="${domain}"`));
+  }
+  assert.match(html,/function selectDomain\(/);
+  assert.match(html,/function renderDomainCommand\(/);
+  assert.match(html,/\/api\/public-intelligence\?domain=/);
+  assert.match(html,/PUBLIC SOURCE DATA · NOT A VERISCOPE FINDING/);
+});
+
+test('public source adapter registers the approved cross-domain catalog without inventing findings',()=>{
+  const source=fs.readFileSync(new URL('../netlify/functions/public-intelligence.mjs',import.meta.url),'utf8');
+  for(const provider of ['NASA GIBS','NASA EONET','NASA FIRMS','NOAA / National Weather Service','USGS Earthquakes','USACE CWMS','MarineCadastre AIS','AviationWeather.gov','FDA openFDA','USDA FoodData Central','CDC NORS','Open Food Facts','U.S. Census International Trade','UN Comtrade','GLEIF','SEC EDGAR','OFAC Sanctions List Service','CISA KEV','NIST NVD']){
+    assert.match(source,new RegExp(provider.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  }
+  assert.match(source,/classification:'PUBLIC_SOURCE_RECORD'/);
+  assert.match(source,/reviewStatus:'SOURCE_ONLY'/);
+  assert.match(source,/They are not VERISCOPE findings until normalized, correlated and reviewed/);
+  assert.match(source,/config=\{path:'\/api\/public-intelligence'\}/);
+});
