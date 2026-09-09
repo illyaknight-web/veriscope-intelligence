@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import {append,getJSON,setJSON} from './core-store.mjs';
 import {applyReviewDecision,buildSafeplateCorrelation,canonicalId,validateSafeplateRecord} from './core-pipeline.mjs';
+import {deliverApprovedFinding} from './safeplate-feedback.mjs';
 
 const now=()=>new Date().toISOString();
 const h=o=>crypto.createHash('sha256').update(JSON.stringify(o)).digest('hex');
@@ -17,7 +18,7 @@ export async function ingestSafeplate(record){
   const check=validateSafeplateRecord(record);if(!check.valid)throw new Error(`SCHEMA_VALIDATION: ${check.errors.join('; ')}`);
   const records=await getJSON('source_records',{}),prior=records[record.id],hash=contentHash(record);
   const existingGraph=(await getJSON('graphs',{}))[canonicalId('graph',record.id)]||null;
-  if(prior?.contentHash===hash&&existingGraph?.analysisVersion==='core-pipeline.v1.2'){await audit('SAFEPLATE_DUPLICATE_SUPPRESSED',{sourceRecordId:record.id,contentHash:hash,analysisVersion:existingGraph.analysisVersion});return {duplicate:true,sourceRecordId:record.id,graph:existingGraph,finding:(await getJSON('findings',{}))[canonicalId('finding',record.id)]||null}}
+  if(prior?.contentHash===hash&&existingGraph?.analysisVersion==='core-pipeline.v1.3'){await audit('SAFEPLATE_DUPLICATE_SUPPRESSED',{sourceRecordId:record.id,contentHash:hash,analysisVersion:existingGraph.analysisVersion});return {duplicate:true,sourceRecordId:record.id,graph:existingGraph,finding:(await getJSON('findings',{}))[canonicalId('finding',record.id)]||null}}
   const change=prior?{type:'UPDATED',fields:changedFields(prior.record,record)}:{type:'NEW',fields:Object.keys(record)};
   records[record.id]={record,contentHash:hash,firstSeenAt:prior?.firstSeenAt||now(),lastSeenAt:now(),previousContentHash:prior?.contentHash||null,change};await setJSON('source_records',records);
   const {graph,finding,entities}=buildSafeplateCorrelation(record);
@@ -35,7 +36,9 @@ export async function ingestSafeplate(record){
 
 export async function reviewFinding(findingId,decision,reviewer='human-reviewer',notes=''){
   const findings=await getJSON('findings',{});const f=findings[findingId];if(!f)throw new Error('FINDING_NOT_FOUND');
-  const reviewed=applyReviewDecision(f,decision,reviewer,notes);findings[findingId]=reviewed;await setJSON('findings',findings);await audit('FINDING_REVIEWED',{findingId,decision,reviewer});return reviewed;
+  const reviewed=applyReviewDecision(f,decision,reviewer,notes);findings[findingId]=reviewed;await setJSON('findings',findings);
+  const feedback=reviewed.humanApproved?await deliverApprovedFinding(reviewed):{status:'NOT_ELIGIBLE'};
+  await audit('FINDING_REVIEWED',{findingId,decision,reviewer,safeplateFeedback:feedback.status});return {...reviewed,safeplateFeedback:feedback};
 }
 
 export {audit,applyReviewDecision,buildSafeplateCorrelation,validateSafeplateRecord};

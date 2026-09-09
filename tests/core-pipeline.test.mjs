@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {applyReviewDecision,buildSafeplateCorrelation,validateSafeplateRecord} from '../netlify/functions/lib/core-pipeline.mjs';
 import {fromSafeplateContract} from '../netlify/functions/lib/safeplate-contract.mjs';
+import {buildSafeplateFeedbackPayload} from '../netlify/functions/lib/safeplate-feedback-contract.mjs';
 
 const recall=JSON.parse(fs.readFileSync(new URL('./fixtures/safeplate-great-value-triple-berry-2026.json',import.meta.url),'utf8'));
 
@@ -92,6 +93,18 @@ test('human review is required and can explicitly approve the finding',()=>{
   assert.equal(reviewed.review.reviewer,'TEST_HUMAN_REVIEWER');
 });
 
+test('only a human-approved finding can cross the SAFEPLATE feedback bridge',()=>{
+  const {finding}=buildSafeplateCorrelation(recall);
+  assert.throws(()=>buildSafeplateFeedbackPayload(finding),/ONLY_HUMAN_APPROVED/);
+  const reviewed=applyReviewDecision(finding,'APPROVED','TEST_HUMAN_REVIEWER','Evidence verified for return to SAFEPLATE.');
+  const payload=buildSafeplateFeedbackPayload(reviewed);
+  assert.equal(payload.contract_version,'veriscope.safeplate.finding.v1');
+  assert.equal(payload.review.human_approved,true);
+  assert.equal(payload.review.status,'APPROVED');
+  assert.equal(payload.safeplate_record_id,recall.id);
+  assert.ok(payload.evidence.length>=4);
+});
+
 test('versioned SAFEPLATE contract maps evidence and distribution into CORE input',()=>{
   const mapped=fromSafeplateContract({
     safeplate_record_id:'sp-123',schema_version:'safeplate.veriscope.record.v1',record_type:'recall',
@@ -120,5 +133,15 @@ test('command center exposes operational controls, labeled tiles and scheduled r
   assert.match(html,/dark_only_labels/);
   assert.match(html,/function entityGeo\(/);
   assert.match(html,/function graphPath\(/);
+  assert.match(html,/ROLE_CONFIG/);
+  assert.match(html,/function roleFindings\(/);
+  assert.match(html,/ENTER EXECUTIVE VIEW/);
   assert.doesNotMatch(html,/entityType\(e\).*San Carlos\.\*Chile/);
+});
+
+test('reviewed feedback retries every 15 minutes',()=>{
+  const scheduled=fs.readFileSync(new URL('../netlify/functions/safeplate-feedback-sync.mjs',import.meta.url),'utf8');
+  assert.match(scheduled,/schedule:'\*\/15 \* \* \* \*'/);
+  assert.match(scheduled,/humanApproved===true/);
+  assert.match(scheduled,/reviewStatus\)\.toUpperCase\(\)==='APPROVED'/);
 });
