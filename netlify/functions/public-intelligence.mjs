@@ -51,7 +51,7 @@ async function earthRecords(){
     getJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson')
   ]),out=[];
   if(eonet.status==='fulfilled')for(const e of eonet.value.events||[]){const g=(e.geometry||[]).at(-1),p=center(g);out.push(record({id:`EONET-${e.id}`,title:e.title,detail:(e.categories||[]).map(x=>x.title).join(', '),source:'NASA EONET',sourceUrl:(e.sources||[])[0]?.url||e.link,observedAt:g?.date,severity:'WATCH',...p}))}
-  if(quakes.status==='fulfilled')for(const f of quakes.value.features||[]){const p=center(f.geometry);out.push(record({id:`USGS-${f.id}`,title:f.properties?.title,detail:`Magnitude ${f.properties?.mag??'—'} · ${f.properties?.type||'earthquake'}`,source:'USGS Earthquake Hazards Program',sourceUrl:f.properties?.url,observedAt:f.properties?.time?new Date(f.properties.time).toISOString():null,severity:Number(f.properties?.mag)>=6?'HIGH':'WATCH',...p}))}
+  if(quakes.status==='fulfilled')for(const f of quakes.value.features||[]){const p=center(f.geometry);out.push(record({id:`USGS-${f.id}`,title:f.properties?.title,detail:`Magnitude ${f.properties?.mag??' '} · ${f.properties?.type||'earthquake'}`,source:'USGS Earthquake Hazards Program',sourceUrl:f.properties?.url,observedAt:f.properties?.time?new Date(f.properties.time).toISOString():null,severity:Number(f.properties?.mag)>=6?'HIGH':'WATCH',...p}))}
   return out;
 }
 async function weatherRecords(){
