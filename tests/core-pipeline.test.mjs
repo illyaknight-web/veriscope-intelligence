@@ -159,6 +159,10 @@ test('runtime trust contract exposes access-control truth and review identity is
   assert.match(health,/authenticationEnforced:false/);
   assert.match(health,/authorizationEnforced:false/);
   assert.match(health,/roleSelector:'UI_PREVIEW_ONLY'/);
+  assert.match(health,/institutionalUse:institutionalBlockers\.length\?'BLOCKED':'READY'/);
+  assert.match(health,/EXTERNAL_AUDIT_ANCHOR_NOT_IMPLEMENTED/);
+  assert.match(health,/DISTRIBUTED_RATE_LIMITING_NOT_IMPLEMENTED/);
+  assert.match(health,/rateLimitMode:'INSTANCE_LOCAL'/);
   assert.match(review,/resolveReviewerIdentity\(env\)/);
   assert.match(identity,/REVIEWER_IDENTITY_NOT_CONFIGURED/);
   assert.doesNotMatch(review,/body\.reviewer/);
