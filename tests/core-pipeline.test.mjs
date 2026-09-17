@@ -142,6 +142,9 @@ test('command center exposes operational controls, labeled tiles and scheduled r
   assert.match(html,/current populated inventory is derived from the SAFEPLATE reviewed bridge/);
   assert.match(html,/1 ADAPTER CONNECTED/);
   assert.match(html,/PUBLIC DEMO · NO RBAC/);
+  assert.match(html,/Unauthenticated preview session/);
+  assert.match(html,/Preview Session/);
+  assert.doesNotMatch(html,/Illya Knight/);
   assert.doesNotMatch(html,/reviewer:'VERISCOPE_AUTHENTICATED_REVIEWER'/);
   assert.doesNotMatch(html,/entityType\(e\).*San Carlos\.\*Chile/);
 });
