@@ -144,6 +144,8 @@ test('command center exposes operational controls, labeled tiles and scheduled r
   assert.match(html,/current populated inventory is derived from the SAFEPLATE reviewed bridge/);
   assert.match(html,/1 ADAPTER CONNECTED/);
   assert.match(html,/PUBLIC DEMO · NO RBAC/);
+  assert.match(html,/PUBLIC DEMO · NO RBAC · CHECKING CORE/);
+  assert.match(html,/pending\[0\]\.then\(health=>\{state\.health=health;renderSystem\(\)\}\)/);
   assert.match(html,/Unauthenticated preview session/);
   assert.match(html,/Preview Session/);
   assert.doesNotMatch(html,/Illya Knight/);
