@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import {append,getJSON,setJSON} from './core-store.mjs';
+import {append,appendEvent,getJSON,setJSON} from './core-store.mjs';
 import {applyReviewDecision,buildSafeplateCorrelation,canonicalId,validateSafeplateRecord} from './core-pipeline.mjs';
 import {deliverApprovedFinding} from './safeplate-feedback.mjs';
 
@@ -11,7 +11,10 @@ const changedFields=(before,after)=>[...new Set([...Object.keys(before||{}),...O
 async function audit(action,payload){
   const prev=(await getJSON('audit',[])).at(-1)?.hash||null;
   const entry={id:canonicalId('audit',`${action}|${Date.now()}|${Math.random()}`),action,timestamp:now(),prevHash:prev,payload};
-  entry.hash=h(entry);await append('audit',entry,10000);return entry;
+  entry.hash=h(entry);
+  await appendEvent('audit-events',entry);
+  await append('audit',entry,10000);
+  return entry;
 }
 
 export async function ingestSafeplate(record){

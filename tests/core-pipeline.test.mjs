@@ -208,6 +208,22 @@ test('public metadata contains valid VERISCOPE URLs and production security head
   assert.match(config,/for = "\/api\/\*"/);
 });
 
+test('audit events are dual-written to unique objects and truthfully classified',()=>{
+  const store=fs.readFileSync(new URL('../netlify/functions/lib/core-store.mjs',import.meta.url),'utf8');
+  const engine=fs.readFileSync(new URL('../netlify/functions/lib/core-engine.mjs',import.meta.url),'utf8');
+  const integrity=fs.readFileSync(new URL('../netlify/functions/audit-integrity.mjs',import.meta.url),'utf8');
+  const html=fs.readFileSync(new URL('../veriscope-v41-core-live.html',import.meta.url),'utf8');
+  assert.match(store,/export async function appendEvent/);
+  assert.match(store,/`\$\{stream\}\/\$\{item\.timestamp\}\/\$\{item\.id\}`/);
+  assert.match(engine,/await appendEvent\('audit-events',entry\)/);
+  assert.match(integrity,/classification:'APPLICATION_APPEND_ONLY'/);
+  assert.match(integrity,/immutable:false/);
+  assert.match(integrity,/externallyAnchored:false/);
+  assert.match(integrity,/HASH_MISMATCH/);
+  assert.match(integrity,/path:'\/api\/audit-integrity'/);
+  assert.match(html,/External immutable anchoring and administrator tamper resistance are not yet implemented/);
+});
+
 test('public source adapter registers the approved cross-domain catalog without inventing findings',()=>{
   const source=fs.readFileSync(new URL('../netlify/functions/public-intelligence.mjs',import.meta.url),'utf8');
   for(const provider of ['NASA GIBS','NASA EONET','NASA FIRMS','NOAA / National Weather Service','USGS Earthquakes','USACE CWMS','MarineCadastre AIS','AviationWeather.gov','FDA openFDA','USDA FoodData Central','CDC NORS','Open Food Facts','U.S. Census International Trade','UN Comtrade','GLEIF','SEC EDGAR','OFAC Sanctions List Service','CISA KEV','NIST NVD']){
