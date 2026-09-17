@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import {applyReviewDecision,buildSafeplateCorrelation,validateSafeplateRecord} from '../netlify/functions/lib/core-pipeline.mjs';
 import {fromSafeplateContract} from '../netlify/functions/lib/safeplate-contract.mjs';
 import {buildSafeplateFeedbackPayload} from '../netlify/functions/lib/safeplate-feedback-contract.mjs';
+import {resolveReviewerIdentity} from '../netlify/functions/lib/reviewer-identity.mjs';
 
 const recall=JSON.parse(fs.readFileSync(new URL('./fixtures/safeplate-great-value-triple-berry-2026.json',import.meta.url),'utf8'));
 
@@ -140,7 +141,28 @@ test('command center exposes operational controls, labeled tiles and scheduled r
   assert.match(html,/Production RBAC remains required/);
   assert.match(html,/current populated inventory is derived from the SAFEPLATE reviewed bridge/);
   assert.match(html,/1 ADAPTER CONNECTED/);
+  assert.match(html,/PUBLIC DEMO · NO RBAC/);
+  assert.doesNotMatch(html,/reviewer:'VERISCOPE_AUTHENTICATED_REVIEWER'/);
   assert.doesNotMatch(html,/entityType\(e\).*San Carlos\.\*Chile/);
+});
+
+test('runtime trust contract exposes access-control truth and review identity is server-owned',()=>{
+  const health=fs.readFileSync(new URL('../netlify/functions/health.mjs',import.meta.url),'utf8');
+  const review=fs.readFileSync(new URL('../netlify/functions/review.mjs',import.meta.url),'utf8');
+  const identity=fs.readFileSync(new URL('../netlify/functions/lib/reviewer-identity.mjs',import.meta.url),'utf8');
+  assert.match(health,/deploymentAudience:'PUBLIC_DEMONSTRATION'/);
+  assert.match(health,/authenticationEnforced:false/);
+  assert.match(health,/authorizationEnforced:false/);
+  assert.match(health,/roleSelector:'UI_PREVIEW_ONLY'/);
+  assert.match(review,/resolveReviewerIdentity\(env\)/);
+  assert.match(identity,/REVIEWER_IDENTITY_NOT_CONFIGURED/);
+  assert.doesNotMatch(review,/body\.reviewer/);
+});
+
+test('human review identity fails closed and cannot exceed the audit field boundary',()=>{
+  assert.deepEqual(resolveReviewerIdentity(()=>''),{ok:false,error:'REVIEWER_IDENTITY_NOT_CONFIGURED'});
+  assert.deepEqual(resolveReviewerIdentity(()=> ' analyst-17 '),{ok:true,reviewer:'analyst-17'});
+  assert.equal(resolveReviewerIdentity(()=> 'x'.repeat(180)).reviewer.length,120);
 });
 
 test('map workspace exposes multiple SAFEPLATE trackings and reversible full-screen controls',()=>{
