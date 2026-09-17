@@ -5,6 +5,8 @@ import {applyReviewDecision,buildSafeplateCorrelation,validateSafeplateRecord} f
 import {fromSafeplateContract} from '../netlify/functions/lib/safeplate-contract.mjs';
 import {buildSafeplateFeedbackPayload} from '../netlify/functions/lib/safeplate-feedback-contract.mjs';
 import {resolveReviewerIdentity} from '../netlify/functions/lib/reviewer-identity.mjs';
+import {getBoardRegistry,validateBoardRegistry} from '../netlify/functions/lib/board-registry.mjs';
+import boardsEndpoint from '../netlify/functions/boards.mjs';
 
 const recall=JSON.parse(fs.readFileSync(new URL('./fixtures/safeplate-great-value-triple-berry-2026.json',import.meta.url),'utf8'));
 
@@ -215,6 +217,9 @@ test('CORE exposes connected evidence lenses without flattening operating boards
   assert.match(html,/function selectDomain\(/);
   assert.match(html,/function selectBoard\(/);
   assert.match(html,/function renderBoardModule\(/);
+  assert.match(html,/function applyBoardRegistry\(/);
+  assert.match(html,/\/api\/boards/);
+  assert.match(html,/SERVER REGISTRY/);
   assert.match(html,/function readRoute\(/);
   assert.match(html,/function writeRoute\(/);
   assert.match(html,/history\.pushState/);
@@ -222,6 +227,28 @@ test('CORE exposes connected evidence lenses without flattening operating boards
   assert.match(html,/function renderDomainCommand\(/);
   assert.match(html,/\/api\/public-intelligence\?domain=/);
   assert.match(html,/PUBLIC SOURCE DATA · NOT A VERISCOPE FINDING/);
+});
+
+test('operating-board registry cannot activate an untested mission UI',async()=>{
+  const registry=getBoardRegistry(),validation=validateBoardRegistry(registry);
+  assert.deepEqual(registry.boards.map(board=>board.id),['core','defense','cyber','juris']);
+  assert.equal(registry.activationPolicy,'SERVER_STATUS_PLUS_TESTED_UI_RELEASE');
+  assert.equal(validation.valid,true);
+  assert.equal(registry.boards.find(board=>board.id==='core').connected,true);
+  for(const id of ['defense','cyber','juris']){
+    const board=registry.boards.find(item=>item.id===id);
+    assert.equal(board.connected,false);
+    assert.equal(board.operationalUiEnabled,false);
+    assert.ok(board.gates.some(gate=>gate.blocking&&gate.status!=='CONNECTED'));
+  }
+  const unsafe=structuredClone(registry);
+  unsafe.boards.find(board=>board.id==='defense').connected=true;
+  assert.deepEqual(validateBoardRegistry(unsafe),{valid:false,complete:true,unsafeBoardIds:['defense']});
+  const response=await boardsEndpoint(new Request('https://example.test/api/boards'));
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).validation.valid,true);
+  const rejected=await boardsEndpoint(new Request('https://example.test/api/boards',{method:'POST'}));
+  assert.equal(rejected.status,405);
 });
 
 test('public metadata contains valid VERISCOPE URLs and production security headers',()=>{
