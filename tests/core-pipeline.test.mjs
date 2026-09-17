@@ -172,15 +172,36 @@ test('SAFEPLATE batch ingestion performs one bounded store transaction',()=>{
   assert.match(engine,/SAFEPLATE_BATCH_INGESTED/);
 });
 
-test('umbrella command exposes distinct mission-platform controls',()=>{
+test('CORE exposes connected evidence lenses without flattening operating boards into tabs',()=>{
   const html=fs.readFileSync(new URL('../veriscope-v41-core-live.html',import.meta.url),'utf8');
-  for(const domain of ['core','safeplate','northline','earth','maritime','land','aviation','cyber','trade','corporate']){
+  for(const domain of ['core','safeplate','northline','earth','trade','corporate']){
     assert.match(html,new RegExp(`data-domain="${domain}"`));
   }
+  for(const domain of ['maritime','land','aviation','cyber'])assert.doesNotMatch(html,new RegExp(`<button[^>]+data-domain="${domain}"`));
+  for(const board of ['core','defense','cyber','juris'])assert.match(html,new RegExp(`data-board="${board}"`));
+  assert.match(html,/id="missionNav"/);
+  assert.match(html,/id="page-board"/);
+  assert.match(html,/CAPABILITY BOUNDARY/);
+  assert.match(html,/No live records, alerts, findings or readiness claims are displayed/);
   assert.match(html,/function selectDomain\(/);
+  assert.match(html,/function selectBoard\(/);
+  assert.match(html,/function renderBoardModule\(/);
   assert.match(html,/function renderDomainCommand\(/);
   assert.match(html,/\/api\/public-intelligence\?domain=/);
   assert.match(html,/PUBLIC SOURCE DATA · NOT A VERISCOPE FINDING/);
+});
+
+test('public metadata contains valid VERISCOPE URLs and production security headers',()=>{
+  const files=['../index.html','../veriscope-v41-core-live.html','../image-library.html','../knowledge-center/feed.xml','../knowledge-center/the-decision-layer-most-institutions-are-missing/index.html','../knowledge-center/the-next-command-center-may-not-look-like-a-command-center/index.html','../knowledge-center/when-more-data-does-not-mean-more-understanding/index.html'];
+  for(const file of files){
+    const text=fs.readFileSync(new URL(file,import.meta.url),'utf8');
+    assert.doesNotMatch(text,/https:\/\/veriscope intelligence/);
+    assert.doesNotMatch(text,/https:\/\/veriscope-intelligence\.netlify\.app\/[^"'<\s]*\s[^"'<]*/);
+  }
+  const config=fs.readFileSync(new URL('../netlify.toml',import.meta.url),'utf8');
+  for(const header of ['Content-Security-Policy','Permissions-Policy','Referrer-Policy','X-Frame-Options','X-Content-Type-Options'])assert.match(config,new RegExp(header));
+  assert.match(config,/frame-ancestors 'none'/);
+  assert.match(config,/for = "\/api\/\*"/);
 });
 
 test('public source adapter registers the approved cross-domain catalog without inventing findings',()=>{
