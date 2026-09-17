@@ -190,6 +190,10 @@ test('CORE exposes connected evidence lenses without flattening operating boards
   assert.match(html,/function selectDomain\(/);
   assert.match(html,/function selectBoard\(/);
   assert.match(html,/function renderBoardModule\(/);
+  assert.match(html,/function readRoute\(/);
+  assert.match(html,/function writeRoute\(/);
+  assert.match(html,/history\.pushState/);
+  assert.match(html,/window\.addEventListener\('popstate'/);
   assert.match(html,/function renderDomainCommand\(/);
   assert.match(html,/\/api\/public-intelligence\?domain=/);
   assert.match(html,/PUBLIC SOURCE DATA · NOT A VERISCOPE FINDING/);
