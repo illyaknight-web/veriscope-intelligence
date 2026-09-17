@@ -7,6 +7,7 @@ import {buildSafeplateFeedbackPayload} from '../netlify/functions/lib/safeplate-
 import {resolveReviewerIdentity} from '../netlify/functions/lib/reviewer-identity.mjs';
 import {getBoardRegistry,validateBoardRegistry} from '../netlify/functions/lib/board-registry.mjs';
 import boardsEndpoint from '../netlify/functions/boards.mjs';
+import {RADAR_CAPABILITIES,buildRadarSnapshot} from '../netlify/functions/lib/radar-engine.mjs';
 
 const recall=JSON.parse(fs.readFileSync(new URL('./fixtures/safeplate-great-value-triple-berry-2026.json',import.meta.url),'utf8'));
 
@@ -255,6 +256,41 @@ test('operating-board registry cannot activate an untested mission UI',async()=>
   assert.equal((await response.json()).validation.valid,true);
   const rejected=await boardsEndpoint(new Request('https://example.test/api/boards',{method:'POST'}));
   assert.equal(rejected.status,405);
+});
+
+test('intelligence radar derives contacts from evidence and labels every invention honestly',()=>{
+  const now=Date.parse('2026-09-17T12:00:00.000Z');
+  const snapshot=buildRadarSnapshot({
+    now,
+    entities:{e1:{id:'e1',match:{contradictingEvidence:[{source:'B'}]}}},
+    graphs:{g1:{id:'g1',version:2,edges:[{id:'edge-1',confidence:.9}]}},
+    findings:{f1:{id:'f1',sourceRecordId:'record-1',confidence:.6,timestamp:'2026-07-01T00:00:00.000Z',reviewStatus:'PENDING_HUMAN_REVIEW',humanApproved:false,supportingEvidence:[],contradictingEvidence:[{source:'A'}],review:{timestamp:'2026-09-15T00:00:00.000Z'}}},
+    sourceRecords:{r1:{record:{id:'record-1'},lastSeenAt:'2026-09-16T00:00:00.000Z',change:{type:'UPDATED'}}},
+    auditEvents:[{id:'audit-1'}],
+    circuit:{lastSuccess:'2026-09-17T10:00:00.000Z'}
+  });
+  assert.equal(snapshot.classification,'EVIDENCE_DERIVED_RADAR');
+  for(const type of ['REVIEW','MISSING_EVIDENCE','CONTRADICTION','CHANGE','CONFIDENCE','FRESHNESS','BLAST_RADIUS','AUTHORITY','AUDIT'])assert.ok(snapshot.contacts.some(contact=>contact.type===type),type);
+  assert.equal(snapshot.summary.pendingReview,1);
+  assert.equal(snapshot.summary.auditEvents,1);
+  assert.equal(RADAR_CAPABILITIES.length,18);
+  for(const name of ['Evidence Relay','Missing Evidence Engine','Contradiction Radar','Decision Replay','Changed Since Last Review','Confidence Decay','Evidence Half-Life','Source DNA','Corroboration Independence Score','Uncertainty Budget','No-Silent-Inference Rule','Alternative Hypothesis Engine','Evidence Blast Radius','Entity Resolution Explanation','Relationship Challenge','Temporal Evidence Twin','Authority-to-Act Check','Mission Capsule'])assert.ok(RADAR_CAPABILITIES.some(item=>item.name===name),name);
+  assert.equal(RADAR_CAPABILITIES.find(item=>item.name==='Evidence Relay').status,'LOCKED');
+  assert.equal(RADAR_CAPABILITIES.find(item=>item.name==='Missing Evidence Engine').status,'ACTIVE');
+});
+
+test('CORE exposes an accessible radar station backed by the radar API',()=>{
+  const html=fs.readFileSync(new URL('../veriscope-v41-core-live.html',import.meta.url),'utf8');
+  const endpoint=fs.readFileSync(new URL('../netlify/functions/radar.mjs',import.meta.url),'utf8');
+  assert.match(html,/data-page="radar"/);
+  assert.match(html,/id="page-radar"/);
+  assert.match(html,/id="radarScope" role="region" aria-label="Evidence-derived intelligence radar"/);
+  assert.match(html,/function renderRadar\(/);
+  assert.match(html,/\/api\/radar/);
+  assert.match(html,/prefers-reduced-motion:reduce/);
+  assert.match(endpoint,/buildRadarSnapshot/);
+  assert.match(endpoint,/listEvents\('audit-events'/);
+  assert.match(endpoint,/classification:'EVIDENCE_DERIVED_RADAR'/);
 });
 
 test('public metadata contains valid VERISCOPE URLs and production security headers',()=>{
