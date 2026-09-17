@@ -135,7 +135,11 @@ test('command center exposes operational controls, labeled tiles and scheduled r
   assert.match(html,/function graphPath\(/);
   assert.match(html,/ROLE_CONFIG/);
   assert.match(html,/function roleFindings\(/);
-  assert.match(html,/ENTER EXECUTIVE VIEW/);
+  assert.match(html,/OPEN EXECUTIVE PREVIEW/);
+  assert.match(html,/It is not authentication or authorization/);
+  assert.match(html,/Production RBAC remains required/);
+  assert.match(html,/current populated inventory is derived from the SAFEPLATE reviewed bridge/);
+  assert.match(html,/1 ADAPTER CONNECTED/);
   assert.doesNotMatch(html,/entityType\(e\).*San Carlos\.\*Chile/);
 });
 
