@@ -13,7 +13,7 @@ export default async function(){
       ids.add(stored.id);
     }
     return Response.json({
-      status:invalid.length?'FAILED':'VERIFIED',
+      status:!events.length?'EMPTY':invalid.length?'FAILED':'VERIFIED',
       classification:'APPLICATION_APPEND_ONLY',
       immutable:false,
       externallyAnchored:false,

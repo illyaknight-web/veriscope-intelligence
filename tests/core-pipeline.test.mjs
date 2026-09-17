@@ -220,6 +220,7 @@ test('audit events are dual-written to unique objects and truthfully classified'
   assert.match(integrity,/immutable:false/);
   assert.match(integrity,/externallyAnchored:false/);
   assert.match(integrity,/HASH_MISMATCH/);
+  assert.match(integrity,/!events\.length\?'EMPTY'/);
   assert.match(integrity,/path:'\/api\/audit-integrity'/);
   assert.match(html,/External immutable anchoring and administrator tamper resistance are not yet implemented/);
 });
