@@ -4,6 +4,10 @@ import fs from 'node:fs';
 import {applyReviewDecision,buildSafeplateCorrelation,validateSafeplateRecord} from '../netlify/functions/lib/core-pipeline.mjs';
 import {fromSafeplateContract} from '../netlify/functions/lib/safeplate-contract.mjs';
 import {buildSafeplateFeedbackPayload} from '../netlify/functions/lib/safeplate-feedback-contract.mjs';
+import {resolveReviewerIdentity} from '../netlify/functions/lib/reviewer-identity.mjs';
+import {getBoardRegistry,validateBoardRegistry} from '../netlify/functions/lib/board-registry.mjs';
+import boardsEndpoint from '../netlify/functions/boards.mjs';
+import {RADAR_CAPABILITIES,buildRadarSnapshot} from '../netlify/functions/lib/radar-engine.mjs';
 
 const recall=JSON.parse(fs.readFileSync(new URL('./fixtures/safeplate-great-value-triple-berry-2026.json',import.meta.url),'utf8'));
 
@@ -135,8 +139,42 @@ test('command center exposes operational controls, labeled tiles and scheduled r
   assert.match(html,/function graphPath\(/);
   assert.match(html,/ROLE_CONFIG/);
   assert.match(html,/function roleFindings\(/);
-  assert.match(html,/ENTER EXECUTIVE VIEW/);
+  assert.match(html,/OPEN EXECUTIVE PREVIEW/);
+  assert.match(html,/It is not authentication or authorization/);
+  assert.match(html,/Production RBAC remains required/);
+  assert.match(html,/current populated inventory is derived from the SAFEPLATE reviewed bridge/);
+  assert.match(html,/1 ADAPTER CONNECTED/);
+  assert.match(html,/PUBLIC DEMO · NO RBAC/);
+  assert.match(html,/PUBLIC DEMO · NO RBAC · CHECKING CORE/);
+  assert.match(html,/pending\[0\]\.then\(health=>\{state\.health=health;renderSystem\(\)\}\)/);
+  assert.match(html,/Unauthenticated preview session/);
+  assert.match(html,/Preview Session/);
+  assert.doesNotMatch(html,/Illya Knight/);
+  assert.doesNotMatch(html,/reviewer:'VERISCOPE_AUTHENTICATED_REVIEWER'/);
   assert.doesNotMatch(html,/entityType\(e\).*San Carlos\.\*Chile/);
+});
+
+test('runtime trust contract exposes access-control truth and review identity is server-owned',()=>{
+  const health=fs.readFileSync(new URL('../netlify/functions/health.mjs',import.meta.url),'utf8');
+  const review=fs.readFileSync(new URL('../netlify/functions/review.mjs',import.meta.url),'utf8');
+  const identity=fs.readFileSync(new URL('../netlify/functions/lib/reviewer-identity.mjs',import.meta.url),'utf8');
+  assert.match(health,/deploymentAudience:'PUBLIC_DEMONSTRATION'/);
+  assert.match(health,/authenticationEnforced:false/);
+  assert.match(health,/authorizationEnforced:false/);
+  assert.match(health,/roleSelector:'UI_PREVIEW_ONLY'/);
+  assert.match(health,/institutionalUse:institutionalBlockers\.length\?'BLOCKED':'READY'/);
+  assert.match(health,/EXTERNAL_AUDIT_ANCHOR_NOT_IMPLEMENTED/);
+  assert.match(health,/DISTRIBUTED_RATE_LIMITING_NOT_IMPLEMENTED/);
+  assert.match(health,/rateLimitMode:'INSTANCE_LOCAL'/);
+  assert.match(review,/resolveReviewerIdentity\(env\)/);
+  assert.match(identity,/REVIEWER_IDENTITY_NOT_CONFIGURED/);
+  assert.doesNotMatch(review,/body\.reviewer/);
+});
+
+test('human review identity fails closed and cannot exceed the audit field boundary',()=>{
+  assert.deepEqual(resolveReviewerIdentity(()=>''),{ok:false,error:'REVIEWER_IDENTITY_NOT_CONFIGURED'});
+  assert.deepEqual(resolveReviewerIdentity(()=> ' analyst-17 '),{ok:true,reviewer:'analyst-17'});
+  assert.equal(resolveReviewerIdentity(()=> 'x'.repeat(180)).reviewer.length,120);
 });
 
 test('map workspace exposes multiple SAFEPLATE trackings and reversible full-screen controls',()=>{
@@ -172,15 +210,117 @@ test('SAFEPLATE batch ingestion performs one bounded store transaction',()=>{
   assert.match(engine,/SAFEPLATE_BATCH_INGESTED/);
 });
 
-test('umbrella command exposes distinct mission-platform controls',()=>{
+test('CORE exposes connected evidence lenses without flattening operating boards into tabs',()=>{
   const html=fs.readFileSync(new URL('../veriscope-v41-core-live.html',import.meta.url),'utf8');
-  for(const domain of ['core','safeplate','northline','earth','maritime','land','aviation','cyber','trade','corporate']){
+  for(const domain of ['core','safeplate','northline','earth','trade','corporate']){
     assert.match(html,new RegExp(`data-domain="${domain}"`));
   }
+  for(const domain of ['maritime','land','aviation','cyber'])assert.doesNotMatch(html,new RegExp(`<button[^>]+data-domain="${domain}"`));
+  for(const board of ['core','defense','cyber','juris'])assert.match(html,new RegExp(`data-board="${board}"`));
+  assert.match(html,/id="missionNav"/);
+  assert.match(html,/id="page-board"/);
+  assert.match(html,/CAPABILITY BOUNDARY/);
+  assert.match(html,/No live records, alerts, findings or readiness claims are displayed/);
   assert.match(html,/function selectDomain\(/);
+  assert.match(html,/function selectBoard\(/);
+  assert.match(html,/function renderBoardModule\(/);
+  assert.match(html,/function applyBoardRegistry\(/);
+  assert.match(html,/\/api\/boards/);
+  assert.match(html,/SERVER REGISTRY/);
+  assert.match(html,/function readRoute\(/);
+  assert.match(html,/function writeRoute\(/);
+  assert.match(html,/history\.pushState/);
+  assert.match(html,/window\.addEventListener\('popstate'/);
   assert.match(html,/function renderDomainCommand\(/);
   assert.match(html,/\/api\/public-intelligence\?domain=/);
   assert.match(html,/PUBLIC SOURCE DATA · NOT A VERISCOPE FINDING/);
+});
+
+test('operating-board registry cannot activate an untested mission UI',async()=>{
+  const registry=getBoardRegistry(),validation=validateBoardRegistry(registry);
+  assert.deepEqual(registry.boards.map(board=>board.id),['core','defense','cyber','juris']);
+  assert.equal(registry.activationPolicy,'SERVER_STATUS_PLUS_TESTED_UI_RELEASE');
+  assert.equal(validation.valid,true);
+  assert.equal(registry.boards.find(board=>board.id==='core').connected,true);
+  for(const id of ['defense','cyber','juris']){
+    const board=registry.boards.find(item=>item.id===id);
+    assert.equal(board.connected,false);
+    assert.equal(board.operationalUiEnabled,false);
+    assert.ok(board.gates.some(gate=>gate.blocking&&gate.status!=='CONNECTED'));
+  }
+  const unsafe=structuredClone(registry);
+  unsafe.boards.find(board=>board.id==='defense').connected=true;
+  assert.deepEqual(validateBoardRegistry(unsafe),{valid:false,complete:true,unsafeBoardIds:['defense']});
+  const response=await boardsEndpoint(new Request('https://example.test/api/boards'));
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).validation.valid,true);
+  const rejected=await boardsEndpoint(new Request('https://example.test/api/boards',{method:'POST'}));
+  assert.equal(rejected.status,405);
+});
+
+test('intelligence radar derives contacts from evidence and labels every invention honestly',()=>{
+  const now=Date.parse('2026-09-17T12:00:00.000Z');
+  const snapshot=buildRadarSnapshot({
+    now,
+    entities:{e1:{id:'e1',match:{contradictingEvidence:[{source:'B'}]}}},
+    graphs:{g1:{id:'g1',version:2,edges:[{id:'edge-1',confidence:.9}]}},
+    findings:{f1:{id:'f1',sourceRecordId:'record-1',confidence:.6,timestamp:'2026-07-01T00:00:00.000Z',reviewStatus:'PENDING_HUMAN_REVIEW',humanApproved:false,supportingEvidence:[],contradictingEvidence:[{source:'A'}],review:{timestamp:'2026-09-15T00:00:00.000Z'}}},
+    sourceRecords:{r1:{record:{id:'record-1'},lastSeenAt:'2026-09-16T00:00:00.000Z',change:{type:'UPDATED'}}},
+    auditEvents:[{id:'audit-1'}],
+    circuit:{lastSuccess:'2026-09-17T10:00:00.000Z'}
+  });
+  assert.equal(snapshot.classification,'EVIDENCE_DERIVED_RADAR');
+  for(const type of ['REVIEW','MISSING_EVIDENCE','CONTRADICTION','CHANGE','CONFIDENCE','FRESHNESS','BLAST_RADIUS','AUTHORITY','AUDIT'])assert.ok(snapshot.contacts.some(contact=>contact.type===type),type);
+  assert.equal(snapshot.summary.pendingReview,1);
+  assert.equal(snapshot.summary.auditEvents,1);
+  assert.equal(RADAR_CAPABILITIES.length,18);
+  for(const name of ['Evidence Relay','Missing Evidence Engine','Contradiction Radar','Decision Replay','Changed Since Last Review','Confidence Decay','Evidence Half-Life','Source DNA','Corroboration Independence Score','Uncertainty Budget','No-Silent-Inference Rule','Alternative Hypothesis Engine','Evidence Blast Radius','Entity Resolution Explanation','Relationship Challenge','Temporal Evidence Twin','Authority-to-Act Check','Mission Capsule'])assert.ok(RADAR_CAPABILITIES.some(item=>item.name===name),name);
+  assert.equal(RADAR_CAPABILITIES.find(item=>item.name==='Evidence Relay').status,'LOCKED');
+  assert.equal(RADAR_CAPABILITIES.find(item=>item.name==='Missing Evidence Engine').status,'ACTIVE');
+});
+
+test('CORE exposes an accessible radar station backed by the radar API',()=>{
+  const html=fs.readFileSync(new URL('../veriscope-v41-core-live.html',import.meta.url),'utf8');
+  const endpoint=fs.readFileSync(new URL('../netlify/functions/radar.mjs',import.meta.url),'utf8');
+  assert.match(html,/data-page="radar"/);
+  assert.match(html,/id="page-radar"/);
+  assert.match(html,/id="radarScope" role="region" aria-label="Evidence-derived intelligence radar"/);
+  assert.match(html,/function renderRadar\(/);
+  assert.match(html,/\/api\/radar/);
+  assert.match(html,/prefers-reduced-motion:reduce/);
+  assert.match(endpoint,/buildRadarSnapshot/);
+  assert.match(endpoint,/listEvents\('audit-events'/);
+  assert.match(endpoint,/classification:'EVIDENCE_DERIVED_RADAR'/);
+});
+
+test('public metadata contains valid VERISCOPE URLs and production security headers',()=>{
+  const files=['../index.html','../veriscope-v41-core-live.html','../image-library.html','../knowledge-center/feed.xml','../knowledge-center/the-decision-layer-most-institutions-are-missing/index.html','../knowledge-center/the-next-command-center-may-not-look-like-a-command-center/index.html','../knowledge-center/when-more-data-does-not-mean-more-understanding/index.html'];
+  for(const file of files){
+    const text=fs.readFileSync(new URL(file,import.meta.url),'utf8');
+    assert.doesNotMatch(text,/https:\/\/veriscope intelligence/);
+    assert.doesNotMatch(text,/https:\/\/veriscope-intelligence\.netlify\.app\/[^"'<\s]*\s[^"'<]*/);
+  }
+  const config=fs.readFileSync(new URL('../netlify.toml',import.meta.url),'utf8');
+  for(const header of ['Content-Security-Policy','Permissions-Policy','Referrer-Policy','X-Frame-Options','X-Content-Type-Options'])assert.match(config,new RegExp(header));
+  assert.match(config,/frame-ancestors 'none'/);
+  assert.match(config,/for = "\/api\/\*"/);
+});
+
+test('audit events are dual-written to unique objects and truthfully classified',()=>{
+  const store=fs.readFileSync(new URL('../netlify/functions/lib/core-store.mjs',import.meta.url),'utf8');
+  const engine=fs.readFileSync(new URL('../netlify/functions/lib/core-engine.mjs',import.meta.url),'utf8');
+  const integrity=fs.readFileSync(new URL('../netlify/functions/audit-integrity.mjs',import.meta.url),'utf8');
+  const html=fs.readFileSync(new URL('../veriscope-v41-core-live.html',import.meta.url),'utf8');
+  assert.match(store,/export async function appendEvent/);
+  assert.match(store,/`\$\{stream\}\/\$\{item\.timestamp\}\/\$\{item\.id\}`/);
+  assert.match(engine,/await appendEvent\('audit-events',entry\)/);
+  assert.match(integrity,/classification:'APPLICATION_APPEND_ONLY'/);
+  assert.match(integrity,/immutable:false/);
+  assert.match(integrity,/externallyAnchored:false/);
+  assert.match(integrity,/HASH_MISMATCH/);
+  assert.match(integrity,/!events\.length\?'EMPTY'/);
+  assert.match(integrity,/path:'\/api\/audit-integrity'/);
+  assert.match(html,/External immutable anchoring and administrator tamper resistance are not yet implemented/);
 });
 
 test('public source adapter registers the approved cross-domain catalog without inventing findings',()=>{
