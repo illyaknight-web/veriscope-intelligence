@@ -85,13 +85,13 @@ const LOADERS={earth:earthRecords,weather:weatherRecords,safeplate:foodRecords,c
 
 export default async req=>{
   if(req.method!=='GET')return Response.json({error:'METHOD_NOT_ALLOWED'},{status:405});
-  const domain=(new URL(req.url).searchParams.get('domain')||'earth').toLowerCase();
+  const url=new URL(req.url),domain=(url.searchParams.get('domain')||'earth').toLowerCase(),surveillance=url.searchParams.get('surveillance')==='1';
   const sources=SOURCE_CATALOG.filter(x=>x.domain===domain),loader=LOADERS[domain];let records=[],error=null;
   if(loader)try{records=await loader()}catch(e){error=e instanceof Error?e.message:'SOURCE_UNAVAILABLE'}
   const retrievedAt=new Date().toISOString();
   const newestObservation=records.map(x=>x.observedAt).filter(Boolean).map(x=>new Date(x).getTime()).filter(Number.isFinite).sort((a,b)=>b-a)[0]||null;
   const freshness={retrievedAt,newestObservationAt:newestObservation?new Date(newestObservation).toISOString():null,newestObservationAgeMinutes:newestObservation?Math.max(0,Math.floor((Date.now()-newestObservation)/60000)):null,pollSucceeded:!error,recordsReturned:records.length,targetPollMinutes:15,nextExpectedPollAt:new Date(Date.now()+15*60000).toISOString()};
-  return Response.json({domain,status:error?'DEGRADED':loader?'LIVE':'CATALOG_ONLY',classification:'PUBLIC_SOURCE_DATA',notice:'Source records are displayed as source records. They are not VERISCOPE findings until normalized, correlated and reviewed.',sources,records,freshness,counts:{sources:sources.length,liveSources:sources.filter(x=>x.status==='LIVE').length,records:records.length,mappable:records.filter(x=>x.lat!==null&&x.lng!==null).length},error,retrievedAt},{headers:{'cache-control':'public, max-age=120, s-maxage=840, stale-while-revalidate=900','x-content-type-options':'nosniff'}});
+  return Response.json({domain,status:error?'DEGRADED':loader?'LIVE':'CATALOG_ONLY',classification:'PUBLIC_SOURCE_DATA',notice:'Source records are displayed as source records. They are not VERISCOPE findings until normalized, correlated and reviewed.',sources,records,freshness,counts:{sources:sources.length,liveSources:sources.filter(x=>x.status==='LIVE').length,records:records.length,mappable:records.filter(x=>x.lat!==null&&x.lng!==null).length},error,retrievedAt},{headers:{'cache-control':surveillance?'no-store':'public, max-age=60, s-maxage=300, stale-while-revalidate=60','x-content-type-options':'nosniff'}});
 };
 
 export const config={path:'/api/public-intelligence'};
