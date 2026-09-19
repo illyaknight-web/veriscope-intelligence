@@ -57,13 +57,13 @@ async function noaaRadarStatus(){
 }
 async function earthRecords(){
   const [eonet,quakes]=await Promise.allSettled([
-    getJSON('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=35'),
-    getJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson')
+    getJSON('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=250'),
+    getJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson')
   ]),out=[];
   if(eonet.status==='fulfilled')for(const e of eonet.value.events||[]){const g=(e.geometry||[]).at(-1),p=center(g);out.push(record({id:`EONET-${e.id}`,title:e.title,detail:(e.categories||[]).map(x=>x.title).join(', '),source:'NASA EONET',sourceUrl:(e.sources||[])[0]?.url||e.link,observedAt:g?.date,severity:'WATCH',...p}))}
   if(quakes.status==='fulfilled')for(const f of quakes.value.features||[]){const p=center(f.geometry);out.push(record({id:`USGS-${f.id}`,title:f.properties?.title,detail:`Magnitude ${f.properties?.mag??' '} · ${f.properties?.type||'earthquake'}`,source:'USGS Earthquake Hazards Program',sourceUrl:f.properties?.url,observedAt:f.properties?.time?new Date(f.properties.time).toISOString():null,severity:Number(f.properties?.mag)>=6?'HIGH':'WATCH',...p}))}
   const radar=await noaaRadarStatus();if(radar)out.push(record(radar));
-  return out;
+  return out.sort((a,b)=>new Date(b.observedAt||0)-new Date(a.observedAt||0));
 }
 async function weatherRecords(){
   const data=await getJSON('https://api.weather.gov/alerts/active?status=actual&message_type=alert');
@@ -90,7 +90,7 @@ export default async req=>{
   if(loader)try{records=await loader()}catch(e){error=e instanceof Error?e.message:'SOURCE_UNAVAILABLE'}
   const retrievedAt=new Date().toISOString();
   const newestObservation=records.map(x=>x.observedAt).filter(Boolean).map(x=>new Date(x).getTime()).filter(Number.isFinite).sort((a,b)=>b-a)[0]||null;
-  const freshness={retrievedAt,newestObservationAt:newestObservation?new Date(newestObservation).toISOString():null,newestObservationAgeMinutes:newestObservation?Math.max(0,Math.floor((Date.now()-newestObservation)/60000)):null,pollSucceeded:!error,recordsReturned:records.length};
+  const freshness={retrievedAt,newestObservationAt:newestObservation?new Date(newestObservation).toISOString():null,newestObservationAgeMinutes:newestObservation?Math.max(0,Math.floor((Date.now()-newestObservation)/60000)):null,pollSucceeded:!error,recordsReturned:records.length,targetPollMinutes:15,nextExpectedPollAt:new Date(Date.now()+15*60000).toISOString()};
   return Response.json({domain,status:error?'DEGRADED':loader?'LIVE':'CATALOG_ONLY',classification:'PUBLIC_SOURCE_DATA',notice:'Source records are displayed as source records. They are not VERISCOPE findings until normalized, correlated and reviewed.',sources,records,freshness,counts:{sources:sources.length,liveSources:sources.filter(x=>x.status==='LIVE').length,records:records.length,mappable:records.filter(x=>x.lat!==null&&x.lng!==null).length},error,retrievedAt},{headers:{'cache-control':'public, max-age=120, s-maxage=840, stale-while-revalidate=900','x-content-type-options':'nosniff'}});
 };
 
