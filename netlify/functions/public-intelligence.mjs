@@ -1,7 +1,13 @@
 const env=name=>globalThis.Netlify?.env?.get?.(name)||process.env[name];
 
 const SOURCE_CATALOG=[
-  {id:'nasa-gibs',domain:'earth',name:'NASA GIBS',status:'PUBLIC',kind:'IMAGERY',url:'https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api'},
+  {id:'nasa-gibs',domain:'earth',name:'NASA GIBS',status:'PUBLIC',kind:'SATELLITE_IMAGERY',sensor:'MODIS_VIIRS',url:'https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api'},
+  {id:'noaa-nexrad',domain:'earth',name:'NOAA NEXRAD',status:'PUBLIC',kind:'GROUND_WEATHER_RADAR',sensor:'WSR_88D',url:'https://www.ncei.noaa.gov/products/radar/next-generation-weather-radar'},
+  {id:'noaa-goes',domain:'earth',name:'NOAA GOES',status:'PUBLIC',kind:'GEOSTATIONARY_SATELLITE',sensor:'ABI',url:'https://www.ncei.noaa.gov/products/satellite/goes-r-series'},
+  {id:'copernicus-s1',domain:'earth',name:'Copernicus Sentinel-1',status:'PUBLIC_CATALOG',kind:'SPACEBORNE_SAR_RADAR',sensor:'C_SAR',url:'https://dataspace.copernicus.eu/'},
+  {id:'copernicus-s2',domain:'earth',name:'Copernicus Sentinel-2',status:'PUBLIC_CATALOG',kind:'MULTISPECTRAL_SATELLITE',sensor:'MSI',url:'https://dataspace.copernicus.eu/'},
+  {id:'usgs-landsat',domain:'earth',name:'USGS Landsat 8/9',status:'PUBLIC_CATALOG',kind:'LAND_SATELLITE',sensor:'OLI_TIRS',url:'https://www.usgs.gov/landsat-missions/landsat-data-access'},
+  {id:'nasa-cmr',domain:'earth',name:'NASA Earthdata CMR',status:'PUBLIC',kind:'EARTH_OBSERVATION_CATALOG',url:'https://cmr.earthdata.nasa.gov/search/'},
   {id:'nasa-eonet',domain:'earth',name:'NASA EONET',status:'LIVE',kind:'EVENTS',url:'https://eonet.gsfc.nasa.gov/docs/v3'},
   {id:'nasa-firms',domain:'earth',name:'NASA FIRMS',status:env('NASA_FIRMS_MAP_KEY')?'CONFIGURED':'KEY_REQUIRED',kind:'FIRE',url:'https://firms.modaps.eosdis.nasa.gov/api/'},
   {id:'usgs-earthquakes',domain:'earth',name:'USGS Earthquakes',status:'LIVE',kind:'SEISMIC',url:'https://earthquake.usgs.gov/fdsnws/event/1/'},
@@ -77,7 +83,10 @@ export default async req=>{
   const domain=(new URL(req.url).searchParams.get('domain')||'earth').toLowerCase();
   const sources=SOURCE_CATALOG.filter(x=>x.domain===domain),loader=LOADERS[domain];let records=[],error=null;
   if(loader)try{records=await loader()}catch(e){error=e instanceof Error?e.message:'SOURCE_UNAVAILABLE'}
-  return Response.json({domain,status:error?'DEGRADED':loader?'LIVE':'CATALOG_ONLY',classification:'PUBLIC_SOURCE_DATA',notice:'Source records are displayed as source records. They are not VERISCOPE findings until normalized, correlated and reviewed.',sources,records,counts:{sources:sources.length,liveSources:sources.filter(x=>x.status==='LIVE').length,records:records.length,mappable:records.filter(x=>x.lat!==null&&x.lng!==null).length},error,retrievedAt:new Date().toISOString()},{headers:{'cache-control':'public, max-age=120, s-maxage=840, stale-while-revalidate=900','x-content-type-options':'nosniff'}});
+  const retrievedAt=new Date().toISOString();
+  const newestObservation=records.map(x=>x.observedAt).filter(Boolean).map(x=>new Date(x).getTime()).filter(Number.isFinite).sort((a,b)=>b-a)[0]||null;
+  const freshness={retrievedAt,newestObservationAt:newestObservation?new Date(newestObservation).toISOString():null,newestObservationAgeMinutes:newestObservation?Math.max(0,Math.floor((Date.now()-newestObservation)/60000)):null,pollSucceeded:!error,recordsReturned:records.length};
+  return Response.json({domain,status:error?'DEGRADED':loader?'LIVE':'CATALOG_ONLY',classification:'PUBLIC_SOURCE_DATA',notice:'Source records are displayed as source records. They are not VERISCOPE findings until normalized, correlated and reviewed.',sources,records,freshness,counts:{sources:sources.length,liveSources:sources.filter(x=>x.status==='LIVE').length,records:records.length,mappable:records.filter(x=>x.lat!==null&&x.lng!==null).length},error,retrievedAt},{headers:{'cache-control':'public, max-age=120, s-maxage=840, stale-while-revalidate=900','x-content-type-options':'nosniff'}});
 };
 
 export const config={path:'/api/public-intelligence'};
