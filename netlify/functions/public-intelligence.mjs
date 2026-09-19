@@ -51,6 +51,10 @@ async function getJSON(url,options={}){
 }
 const record=(input={})=>({id:String(input.id||crypto.randomUUID()),title:safeText(input.title)||'Untitled public record',detail:safeText(input.detail),source:safeText(input.source),sourceUrl:input.sourceUrl||null,observedAt:input.observedAt||null,severity:safeText(input.severity||'INFORMATIONAL').toUpperCase(),lat:Number.isFinite(Number(input.lat))?Number(input.lat):null,lng:Number.isFinite(Number(input.lng))?Number(input.lng):null,classification:'PUBLIC_SOURCE_RECORD',reviewStatus:'SOURCE_ONLY'});
 
+async function noaaRadarStatus(){
+  const url='https://api.weather.gov/radar/stations';
+  try{const data=await getJSON(url);return {id:'NEXRAD-STATUS',title:'NOAA NEXRAD station network',detail:String(data.features?.length||0)+' radar stations returned by NOAA',source:'NOAA NEXRAD / National Weather Service',sourceUrl:url,observedAt:new Date().toISOString(),severity:'INFORMATIONAL'}}catch{return null}
+}
 async function earthRecords(){
   const [eonet,quakes]=await Promise.allSettled([
     getJSON('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=35'),
@@ -58,6 +62,7 @@ async function earthRecords(){
   ]),out=[];
   if(eonet.status==='fulfilled')for(const e of eonet.value.events||[]){const g=(e.geometry||[]).at(-1),p=center(g);out.push(record({id:`EONET-${e.id}`,title:e.title,detail:(e.categories||[]).map(x=>x.title).join(', '),source:'NASA EONET',sourceUrl:(e.sources||[])[0]?.url||e.link,observedAt:g?.date,severity:'WATCH',...p}))}
   if(quakes.status==='fulfilled')for(const f of quakes.value.features||[]){const p=center(f.geometry);out.push(record({id:`USGS-${f.id}`,title:f.properties?.title,detail:`Magnitude ${f.properties?.mag??' '} · ${f.properties?.type||'earthquake'}`,source:'USGS Earthquake Hazards Program',sourceUrl:f.properties?.url,observedAt:f.properties?.time?new Date(f.properties.time).toISOString():null,severity:Number(f.properties?.mag)>=6?'HIGH':'WATCH',...p}))}
+  const radar=await noaaRadarStatus();if(radar)out.push(record(radar));
   return out;
 }
 async function weatherRecords(){
